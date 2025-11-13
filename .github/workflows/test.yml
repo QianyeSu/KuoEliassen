@@ -134,6 +134,9 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install scipy xarray pytest pytest-cov
+          # Windows: add delvewheel for DLL dependency repair
+          if [ "$RUNNER_OS" = "Windows" ]; then pip install delvewheel; fi
+        shell: bash
 
       - name: Ensure mingw64 in PATH before build (Windows)
         if: runner.os == 'Windows'
@@ -147,26 +150,81 @@ jobs:
         run: |
           pip install -e . --no-build-isolation
 
+      - name: Repair Windows DLL dependencies with delvewheel
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          echo "=== Finding and repairing kuoeliassen_module .pyd files ==="
+          $sitepackages = python -c "import site; print(site.getsitepackages()[0])"
+          Write-Host "Site packages: $sitepackages"
+
+          # Find all kuoeliassen_module*.pyd files
+          $pyd_files = Get-ChildItem -Recurse -Filter "*kuoeliassen_module*.pyd" -Path $sitepackages -ErrorAction SilentlyContinue
+          
+          if ($pyd_files) {
+            Write-Host "Found $($pyd_files.Count) .pyd file(s)"
+            foreach ($pyd in $pyd_files) {
+              Write-Host "Processing: $($pyd.FullName)"
+              # Show dependencies first
+              Write-Host "--- Dependencies before repair ---"
+              delvewheel show $pyd.FullName 2>&1 | head -20
+              
+              # Repair (move DLLs into .pyd)
+              Write-Host "--- Running delvewheel repair ---"
+              delvewheel repair $pyd.FullName -w $pyd.DirectoryName
+              Write-Host "Repaired: $($pyd.FullName)"
+            }
+          } else {
+            Write-Host "Warning: No kuoeliassen_module*.pyd files found"
+            Write-Host "Checking what .pyd files exist:"
+            Get-ChildItem -Recurse -Filter "*.pyd" -Path $sitepackages -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+          }
+        continue-on-error: true
+
       - name: Verify installation and DLL dependencies (Windows)
         if: runner.os == 'Windows'
+        shell: powershell
         run: |
           echo "=== Checking if Fortran module can be imported ==="
           python -c "import sys; print('Python executable:', sys.executable)"
-          python -c "import sys; print('sys.path:', sys.path)"
+          
+          $sitepackages = python -c "import site; print(site.getsitepackages()[0])"
+          echo "Site packages: $sitepackages"
 
           echo ""
-          echo "=== PATH environment variable ==="
-          echo $env:PATH
-
-          echo ""
-          echo "=== Verifying mingw64 DLLs are accessible ==="
+          echo "=== Verifying mingw64 DLLs are accessible in PATH ==="
           where.exe libgfortran-5.dll
           where.exe libquadmath-0.dll
           where.exe libgcc_s_seh-1.dll
 
           echo ""
           echo "=== Attempting to import kuoeliassen module ==="
-          python -c "from kuoeliassen import solve_ke; print('[OK] Import successful')"
+          $import_result = python -c "from kuoeliassen import solve_ke; print('[OK] Import successful')" 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            echo "[FAILED] Import failed with exit code $LASTEXITCODE"
+            echo "Error output: $import_result"
+            
+            # Fallback: Copy DLLs to site-packages directly
+            echo ""
+            echo "=== Attempting fallback: copying DLLs to site-packages ==="
+            $dll_source = "C:\tools\msys64\mingw64\bin"
+            @("libgfortran-5.dll", "libquadmath-0.dll", "libgcc_s_seh-1.dll", "libgomp-1.dll", "libwinpthread-1.dll") | ForEach-Object {
+              $src = "$dll_source\$_"
+              $dst = "$sitepackages\$_"
+              if (Test-Path $src) {
+                Copy-Item $src $dst -Force
+                echo "Copied $_ to site-packages"
+              }
+            }
+            
+            # Retry import
+            echo ""
+            echo "=== Retrying import after copying DLLs ==="
+            python -c "from kuoeliassen import solve_ke; print('[OK] Import successful after DLL copy')"
+          } else {
+            echo $import_result
+          }
+        continue-on-error: false
 
       - name: Run tests
         run: |

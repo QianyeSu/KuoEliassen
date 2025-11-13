@@ -1,0 +1,65 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test Coverage (Ubuntu, Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential gfortran cmake ninja-build
+          python -m pip install --upgrade pip setuptools wheel build
+          python -m pip install "meson-python>=0.15.0" numpy scipy xarray pytest pytest-cov coverage[toml]
+
+      - name: Verify compiler environment
+        run: |
+          gcc --version | head -1
+          gfortran --version | head -1
+          g++ --version | head -1
+
+      - name: Build and install package
+        run: |
+          export CC=gcc
+          export CXX=g++
+          export FC=gfortran
+          export F77=gfortran
+          export F90=gfortran
+          export FFLAGS="-O3 -fPIC -fopenmp -fno-second-underscore -std=legacy"
+          export CFLAGS="-O3 -fPIC -fopenmp"
+          export LDFLAGS="-fopenmp"
+          pip install -e . --no-build-isolation -v
+
+      - name: Run tests with coverage
+        run: |
+          pytest tests/ -v --cov=kuoeliassen --cov-report=xml --cov-report=html --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: kuoeliassen-coverage
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

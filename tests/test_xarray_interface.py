@@ -17,22 +17,22 @@ class TestSolveKEXarrayBasic:
     @pytest.fixture
     def xarray_dataset(self):
         """Create xarray Dataset with typical atmospheric data."""
-        nz, ny, nt = 8, 5, 3
+        nt, nz, ny = 3, 8, 5  # (time, pressure, latitude) order to match core.py
 
         p = np.array([1000, 925, 850, 700, 500, 300, 200, 100]) * 100.0
         lat = np.array([20, 30, 40, 50, 60], dtype=np.float64)
         time = np.arange(nt)
 
         ds = xr.Dataset({
-            'v': (['pressure', 'latitude', 'time'], np.random.randn(nz, ny, nt)),
-            'temp': (['pressure', 'latitude', 'time'],
-                     np.random.randn(nz, ny, nt) * 10 + 273.15),
-            'heating': (['pressure', 'latitude', 'time'],
-                        np.random.randn(nz, ny, nt) * 0.01),
-            'vt_eddy': (['pressure', 'latitude', 'time'],
-                        np.random.randn(nz, ny, nt) * 0.1),
-            'vu_eddy': (['pressure', 'latitude', 'time'],
-                        np.random.randn(nz, ny, nt) * 0.1),
+            'v': (['time', 'pressure', 'latitude'], np.random.randn(nt, nz, ny)),
+            'temp': (['time', 'pressure', 'latitude'],
+                     np.random.randn(nt, nz, ny) * 10 + 273.15),
+            'heating': (['time', 'pressure', 'latitude'],
+                        np.random.randn(nt, nz, ny) * 0.01),
+            'vt_eddy': (['time', 'pressure', 'latitude'],
+                        np.random.randn(nt, nz, ny) * 0.1),
+            'vu_eddy': (['time', 'pressure', 'latitude'],
+                        np.random.randn(nt, nz, ny) * 0.1),
         }, coords={
             'pressure': p,
             'latitude': lat,
@@ -44,12 +44,11 @@ class TestSolveKEXarrayBasic:
     def test_xarray_returns_dataset(self, xarray_dataset):
         """Test that solve_ke_xarray returns xarray Dataset."""
         result = solve_ke_xarray(
-            v_mean=xarray_dataset['v'],
+            v=xarray_dataset['v'],
             temperature=xarray_dataset['temp'],
             heating=xarray_dataset['heating'],
             vt_eddy=xarray_dataset['vt_eddy'],
-            vu_eddy=xarray_dataset['vu_eddy'],
-            qgpv=True
+            vu_eddy=xarray_dataset['vu_eddy'], pressure_dim='pressure', latitude_dim='latitude', qgpv=True
         )
 
         assert isinstance(result, xr.Dataset)
@@ -57,12 +56,11 @@ class TestSolveKEXarrayBasic:
     def test_xarray_output_variables(self, xarray_dataset):
         """Test that output contains expected variables."""
         result = solve_ke_xarray(
-            v_mean=xarray_dataset['v'],
+            v=xarray_dataset['v'],
             temperature=xarray_dataset['temp'],
             heating=xarray_dataset['heating'],
             vt_eddy=xarray_dataset['vt_eddy'],
-            vu_eddy=xarray_dataset['vu_eddy'],
-            qgpv=True
+            vu_eddy=xarray_dataset['vu_eddy'], pressure_dim='pressure', latitude_dim='latitude', qgpv=True
         )
 
         # Check all expected variables present
@@ -79,12 +77,11 @@ class TestSolveKEXarrayBasic:
     def test_xarray_preserves_coordinates(self, xarray_dataset):
         """Test that coordinates are preserved."""
         result = solve_ke_xarray(
-            v_mean=xarray_dataset['v'],
+            v=xarray_dataset['v'],
             temperature=xarray_dataset['temp'],
             heating=xarray_dataset['heating'],
             vt_eddy=xarray_dataset['vt_eddy'],
-            vu_eddy=xarray_dataset['vu_eddy'],
-            qgpv=True
+            vu_eddy=xarray_dataset['vu_eddy'], pressure_dim='pressure', latitude_dim='latitude', qgpv=True
         )
 
         # Check coordinates
@@ -101,12 +98,11 @@ class TestSolveKEXarrayBasic:
     def test_xarray_preserves_shape(self, xarray_dataset):
         """Test that output shape matches input shape."""
         result = solve_ke_xarray(
-            v_mean=xarray_dataset['v'],
+            v=xarray_dataset['v'],
             temperature=xarray_dataset['temp'],
             heating=xarray_dataset['heating'],
             vt_eddy=xarray_dataset['vt_eddy'],
-            vu_eddy=xarray_dataset['vu_eddy'],
-            qgpv=True
+            vu_eddy=xarray_dataset['vu_eddy'], pressure_dim='pressure', latitude_dim='latitude', qgpv=True
         )
 
         expected_shape = xarray_dataset['v'].shape
@@ -115,12 +111,11 @@ class TestSolveKEXarrayBasic:
     def test_xarray_has_metadata(self, xarray_dataset):
         """Test that output variables have metadata (attrs)."""
         result = solve_ke_xarray(
-            v_mean=xarray_dataset['v'],
+            v=xarray_dataset['v'],
             temperature=xarray_dataset['temp'],
             heating=xarray_dataset['heating'],
             vt_eddy=xarray_dataset['vt_eddy'],
-            vu_eddy=xarray_dataset['vu_eddy'],
-            qgpv=True
+            vu_eddy=xarray_dataset['vu_eddy'], pressure_dim='pressure', latitude_dim='latitude', qgpv=True
         )
 
         # Check that variables have attributes
@@ -161,12 +156,11 @@ class TestSolveKEXarrayCoordinates:
     def test_xarray_handles_reversed_pressure(self, reversed_pressure_dataset):
         """Test that reversed pressure coordinates are handled correctly."""
         result = solve_ke_xarray(
-            v_mean=reversed_pressure_dataset['v'],
+            v=reversed_pressure_dataset['v'],
             temperature=reversed_pressure_dataset['temp'],
             heating=reversed_pressure_dataset['heating'],
             vt_eddy=reversed_pressure_dataset['vt_eddy'],
-            vu_eddy=reversed_pressure_dataset['vu_eddy'],
-            qgpv=True
+            vu_eddy=reversed_pressure_dataset['vu_eddy'], pressure_dim='pressure', latitude_dim='latitude', qgpv=True
         )
 
         # Should return successfully with correct coordinates
@@ -202,12 +196,11 @@ class TestSolveKEXarrayCoordinates:
         })
 
         result = solve_ke_xarray(
-            v_mean=ds['v'],
+            v=ds['v'],
             temperature=ds['temp'],
             heating=ds['heating'],
             vt_eddy=ds['vt_eddy'],
-            vu_eddy=ds['vu_eddy'],
-            qgpv=True
+            vu_eddy=ds['vu_eddy'], pressure_dim='pressure', latitude_dim='latitude', qgpv=True
         )
 
         # Should work and preserve dimension names
@@ -250,12 +243,11 @@ class TestSolveKEXarrayHeatingModes:
     def test_xarray_single_heating(self, basic_xarray):
         """Test xarray with single heating field."""
         result = solve_ke_xarray(
-            v_mean=basic_xarray['v'],
+            v=basic_xarray['v'],
             temperature=basic_xarray['temp'],
             heating=basic_xarray['heating'],
             vt_eddy=basic_xarray['vt_eddy'],
-            vu_eddy=basic_xarray['vu_eddy'],
-            qgpv=True
+            vu_eddy=basic_xarray['vu_eddy'], pressure_dim='pressure', latitude_dim='latitude', qgpv=True
         )
 
         # PSI_latent and PSI_rad should be zeros in single mode
@@ -265,13 +257,12 @@ class TestSolveKEXarrayHeatingModes:
     def test_xarray_decomposed_heating(self, basic_xarray):
         """Test xarray with decomposed heating."""
         result = solve_ke_xarray(
-            v_mean=basic_xarray['v'],
+            v=basic_xarray['v'],
             temperature=basic_xarray['temp'],
             rad_heating=basic_xarray['rad'],
             latent_heating=basic_xarray['latent'],
             vt_eddy=basic_xarray['vt_eddy'],
-            vu_eddy=basic_xarray['vu_eddy'],
-            qgpv=True
+            vu_eddy=basic_xarray['vu_eddy'], pressure_dim='pressure', latitude_dim='latitude', qgpv=True
         )
 
         # Should have non-zero PSI_latent and PSI_rad
@@ -292,13 +283,12 @@ class TestSolveKELHSXarray:
         time = np.arange(nt)
 
         ds = xr.Dataset({
-            'v': (['pressure', 'latitude', 'time'], np.random.randn(nz, ny, nt)),
-            'temp': (['pressure', 'latitude', 'time'],
-                     np.random.randn(nz, ny, nt) + 273.15),
-            'vt_eddy': (['pressure', 'latitude', 'time'],
-                        np.random.randn(nz, ny, nt) * 0.1),
-            'vu_eddy': (['pressure', 'latitude', 'time'],
-                        np.random.randn(nz, ny, nt) * 0.1),
+            'psi_base': (['pressure', 'latitude', 'time'], np.random.randn(nz, ny, nt) * 1e9),
+            'temp_base': (['pressure', 'latitude', 'time'],
+                          np.random.randn(nz, ny, nt) * 10 + 273.15),
+            'psi_current': (['pressure', 'latitude', 'time'], np.random.randn(nz, ny, nt) * 1e9),
+            'temp_current': (['pressure', 'latitude', 'time'],
+                             np.random.randn(nz, ny, nt) * 10 + 273.15),
         }, coords={
             'pressure': p,
             'latitude': lat,
@@ -310,11 +300,10 @@ class TestSolveKELHSXarray:
     def test_lhs_xarray_returns_dataset(self, xarray_data):
         """Test that LHS xarray returns Dataset."""
         result = solve_ke_LHS_xarray(
-            v_mean=xarray_data['v'],
-            temperature=xarray_data['temp'],
-            vt_eddy=xarray_data['vt_eddy'],
-            vu_eddy=xarray_data['vu_eddy'],
-            qgpv=True
+            psi_base=xarray_data['psi_base'],
+            temp_base=xarray_data['temp_base'],
+            psi_current=xarray_data['psi_current'],
+            temp_current=xarray_data['temp_current']
         )
 
         assert isinstance(result, xr.Dataset)
@@ -322,26 +311,22 @@ class TestSolveKELHSXarray:
     def test_lhs_xarray_output_variables(self, xarray_data):
         """Test LHS output variables."""
         result = solve_ke_LHS_xarray(
-            v_mean=xarray_data['v'],
-            temperature=xarray_data['temp'],
-            vt_eddy=xarray_data['vt_eddy'],
-            vu_eddy=xarray_data['vu_eddy'],
-            qgpv=True
+            psi_base=xarray_data['psi_base'],
+            temp_base=xarray_data['temp_base'],
+            psi_current=xarray_data['psi_current'],
+            temp_current=xarray_data['temp_current']
         )
 
-        assert 'PSI_vt' in result
-        assert 'PSI_vu' in result
-        assert 'PSI_x' in result
-        assert 'PSI_friction' in result
+        assert 'PSI_stability' in result
+        assert 'PSI_residual' in result
 
     def test_lhs_xarray_preserves_coordinates(self, xarray_data):
         """Test that LHS preserves coordinates."""
         result = solve_ke_LHS_xarray(
-            v_mean=xarray_data['v'],
-            temperature=xarray_data['temp'],
-            vt_eddy=xarray_data['vt_eddy'],
-            vu_eddy=xarray_data['vu_eddy'],
-            qgpv=True
+            psi_base=xarray_data['psi_base'],
+            temp_base=xarray_data['temp_base'],
+            psi_current=xarray_data['psi_current'],
+            temp_current=xarray_data['temp_current']
         )
 
         assert 'pressure' in result.coords
@@ -349,17 +334,17 @@ class TestSolveKELHSXarray:
         assert 'time' in result.coords
 
     def test_lhs_qgpv_false(self, xarray_data):
-        """Test LHS with qgpv=False."""
+        """Test LHS decomposition (no qgpv parameter in LHS)."""
         result = solve_ke_LHS_xarray(
-            v_mean=xarray_data['v'],
-            temperature=xarray_data['temp'],
-            vt_eddy=xarray_data['vt_eddy'],
-            vu_eddy=xarray_data['vu_eddy'],
-            qgpv=False
+            psi_base=xarray_data['psi_base'],
+            temp_base=xarray_data['temp_base'],
+            psi_current=xarray_data['psi_current'],
+            temp_current=xarray_data['temp_current']
         )
 
         assert isinstance(result, xr.Dataset)
-        assert 'PSI_vt' in result
+        assert 'PSI_stability' in result
+        assert 'PSI_residual' in result
 
 
 class TestXarrayEdgeCases:
@@ -388,12 +373,11 @@ class TestXarrayEdgeCases:
         })
 
         result = solve_ke_xarray(
-            v_mean=ds['v'],
+            v=ds['v'],
             temperature=ds['temp'],
             heating=ds['heating'],
             vt_eddy=ds['vt_eddy'],
-            vu_eddy=ds['vu_eddy'],
-            qgpv=True
+            vu_eddy=ds['vu_eddy'], pressure_dim='pressure', latitude_dim='latitude', qgpv=True
         )
 
         assert result['PSI_Q'].shape == (nz, ny)
@@ -438,12 +422,11 @@ class TestXarrayEdgeCases:
         )
 
         result = solve_ke_xarray(
-            v_mean=v,
+            v=v,
             temperature=temp,
             heating=heating,
             vt_eddy=vt_eddy,
-            vu_eddy=vu_eddy,
-            qgpv=True
+            vu_eddy=vu_eddy, pressure_dim='pressure', latitude_dim='latitude', qgpv=True
         )
 
         # Output should have metadata
@@ -486,12 +469,11 @@ class TestXarrayIntegration:
         })
 
         result = solve_ke_xarray(
-            v_mean=ds['v'],
+            v=ds['v'],
             temperature=ds['temp'],
             heating=ds['heating'],
             vt_eddy=ds['vt_eddy'],
-            vu_eddy=ds['vu_eddy'],
-            qgpv=True
+            vu_eddy=ds['vu_eddy'], pressure_dim='pressure', latitude_dim='latitude', qgpv=True
         )
 
         # Check output is reasonable

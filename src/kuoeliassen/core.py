@@ -34,7 +34,7 @@ def _reshape_solution(psi_flat: np.ndarray, nlat: int, nlev: int) -> np.ndarray:
 
 
 def solve_ke(
-    v_mean: np.ndarray,
+    v: np.ndarray,
     temperature: np.ndarray,
     vt_eddy: np.ndarray,
     vu_eddy: np.ndarray,
@@ -53,7 +53,7 @@ def solve_ke(
 
     Parameters
     ----------
-    v_mean : ndarray, shape (nlev, nlat) or (ntime, nlev, nlat)
+    v : ndarray, shape (nlev, nlat) or (ntime, nlev, nlat)
         Mean meridional wind [m/s]
     temperature : ndarray, shape (nlev, nlat) or (ntime, nlev, nlat)
         Temperature field [K]
@@ -92,7 +92,7 @@ def solve_ke(
         - 'thermal_term': f*(∂Q_θ/∂p)/(∂θ/∂p) [s⁻²] - Thermal forcing term
         - 'qgpv_residual': momentum_term - thermal_term [s⁻²] - Balance residual
 
-        Note: Friction forcing (F) is automatically computed from v_mean and vu_eddy
+        Note: Friction forcing (F) is automatically computed from v and vu_eddy
               as: F = d(u'v'*cos²φ)/dφ / cos²φ - v*f
 
         For 3D input, all output arrays have shape (ntime, nlev, nlat)
@@ -117,8 +117,8 @@ def solve_ke(
     result = solve_ke(v_3d, T_3d, vt_3d, vu_3d, p, lat, heating=Q_3d)
     """
     # Handle 3D input by recursive call
-    if v_mean.ndim == 3:
-        ntime, nlev, nlat = v_mean.shape
+    if v.ndim == 3:
+        ntime, nlev, nlat = v.shape
         results = []
         for t in range(ntime):
             # Extract 2D slice and recursively call
@@ -132,14 +132,14 @@ def solve_ke(
                 raise ValueError(
                     "Either 'heating' or both 'rad_heating' and 'latent_heating' required")
 
-            results.append(solve_ke(v_mean[t], temperature[t], vt_eddy[t], vu_eddy[t],
+            results.append(solve_ke(v[t], temperature[t], vt_eddy[t], vu_eddy[t],
                                     pressure, latitude, **kwargs))
 
         # Stack results
         return {key: np.stack([r[key] for r in results], axis=0) for key in results[0].keys()}
 
     # 2D mode - validate shapes
-    nlev, nlat = v_mean.shape
+    nlev, nlat = v.shape
     for name, arr in [('temperature', temperature), ('vt_eddy', vt_eddy), ('vu_eddy', vu_eddy)]:
         if arr.shape != (nlev, nlat):
             raise ValueError(
@@ -171,9 +171,9 @@ def solve_ke(
 
     # Ensure Fortran-contiguous arrays with float32 for Python interface
     # Using tuple unpacking for memory efficiency (avoids dictionary overhead)
-    v_mean_f, temp_f, latent_heating_f, rad_heating_f, vt_eddy_f, vu_eddy_f, p_f, phi_f = (
+    v_f, temp_f, latent_heating_f, rad_heating_f, vt_eddy_f, vu_eddy_f, p_f, phi_f = (
         np.asfortranarray(arr, dtype=np.float32) for arr in
-        (v_mean, temperature, latent_heating,
+        (v, temperature, latent_heating,
          rad_heating, vt_eddy, vu_eddy, pressure, phi)
     )
 
@@ -189,7 +189,7 @@ def solve_ke(
     #   D_x: Friction term = -f * dF/dp (heating-independent)
     #   F_friction: Friction force X = d(u'v'*cos²)/dφ / cos² - v̄*f [m/s²]
     D_latent, D_rad, D_vt, D_vu, D_x, F_friction = KuoEliassen_module.compute_rhs_components(
-        v_mean_f, temp_f, latent_heating_f, rad_heating_f, vt_eddy_f, vu_eddy_f, p_f, phi_f, keep_poles_int
+        v_f, temp_f, latent_heating_f, rad_heating_f, vt_eddy_f, vu_eddy_f, p_f, phi_f, keep_poles_int
     )
 
     # Total RHS
@@ -250,7 +250,7 @@ def solve_ke(
         F_friction_f = np.asfortranarray(F_friction, dtype=np.float32)
 
         momentum_term, thermal_term = KuoEliassen_module.compute_qgpv_balance_terms(
-            temp_f, v_mean_f, F_friction_f, Q_total_f, vt_eddy_f, vu_eddy_f, p_f, phi_f
+            temp_f, v_f, F_friction_f, Q_total_f, vt_eddy_f, vu_eddy_f, p_f, phi_f
         )
 
         result.update({
@@ -335,7 +335,7 @@ def solve_ke_LHS(
     Examples
     --------
     # Multi-year mean baseline
-    result_base = solve_ke(v_mean, T_mean, vt_mean, vu_mean, p, lat, heating=Q_mean)
+    result_base = solve_ke(v, T_mean, vt_mean, vu_mean, p, lat, heating=Q_mean)
     psi_base = result_base['PSI']
     T_base = T_mean
 

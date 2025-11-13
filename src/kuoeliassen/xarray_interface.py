@@ -10,12 +10,12 @@ from .utils import normalize_pressure, normalize_latitude
 
 
 def solve_ke_xarray(
-    v_mean: xr.DataArray,
+    v: xr.DataArray,
     temperature: xr.DataArray,
     vt_eddy: xr.DataArray,
     vu_eddy: xr.DataArray,
-    pressure_dim: Optional[str] = None,
-    latitude_dim: Optional[str] = None,
+    pressure_dim: str = "level",
+    latitude_dim: str = "lat",
     heating: Optional[xr.DataArray] = None,
     rad_heating: Optional[xr.DataArray] = None,
     latent_heating: Optional[xr.DataArray] = None,
@@ -26,7 +26,7 @@ def solve_ke_xarray(
 
     Parameters
     ----------
-    v_mean : xr.DataArray
+    v : xr.DataArray
         Mean meridional wind [m/s]
     temperature : xr.DataArray
         Temperature field [K]
@@ -34,10 +34,10 @@ def solve_ke_xarray(
         Eddy heat flux v'T' [K·m/s]
     vu_eddy : xr.DataArray
         Eddy momentum flux u'v' [m²/s²]
-    pressure_dim : str, optional
-        Name of pressure dimension (auto-detected if None)
-    latitude_dim : str, optional
-        Name of latitude dimension (auto-detected if None)
+    pressure_dim : str, default='level'
+        Name of pressure dimension
+    latitude_dim : str, default='lat'
+        Name of latitude dimension
     heating : xr.DataArray, optional
         Total diabatic heating rate [K/s] (use this OR rad_heating+latent_heating)
     rad_heating : xr.DataArray, optional
@@ -71,40 +71,19 @@ def solve_ke_xarray(
     - Mode 1: Only `heating` provided → single total heating (PSI_latent/PSI_rad are zeros)
     - Mode 2: Both `rad_heating` and `latent_heating` → decomposed heating components
 
-    Dimension names:
-    - Pressure dimension: auto-detected from ['pressure', 'plev', 'lev', 'level', 'pfull']
-    - Latitude dimension: auto-detected from ['latitude', 'lat', 'y']
-
     Examples
     --------
     # Mode 1: Single heating
-    result = solve_ke_xarray(v, T, vt, vu, heating=Q)
+    result = solve_ke_xarray(v, T, vt, vu, heating=Q, pressure_dim='plev', latitude_dim='lat')
 
     # Mode 2: Decomposed heating
-    result = solve_ke_xarray(v, T, vt, vu, rad_heating=Q_rad, latent_heating=Q_lat)
+    result = solve_ke_xarray(v, T, vt, vu, rad_heating=Q_rad, latent_heating=Q_lat,
+                             pressure_dim='plev', latitude_dim='lat')
 
     # With QGPV diagnostics
-    result = solve_ke_xarray(v, T, vt, vu, heating=Q, qgpv=True)
+    result = solve_ke_xarray(v, T, vt, vu, heating=Q, qgpv=True,
+                             pressure_dim='plev', latitude_dim='lat')
     """
-    # Auto-detect dimension names if not provided
-    if pressure_dim is None:
-        pressure_candidates = ['pressure', 'plev', 'lev', 'level', 'pfull']
-        for candidate in pressure_candidates:
-            if candidate in temperature.dims:
-                pressure_dim = candidate
-                break
-        if pressure_dim is None:
-            raise ValueError(f"Could not auto-detect pressure dimension. Available dims: {temperature.dims}")
-    
-    if latitude_dim is None:
-        latitude_candidates = ['latitude', 'lat', 'y']
-        for candidate in latitude_candidates:
-            if candidate in temperature.dims:
-                latitude_dim = candidate
-                break
-        if latitude_dim is None:
-            raise ValueError(f"Could not auto-detect latitude dimension. Available dims: {temperature.dims}")
-    
     # Normalize and sort coordinates
     pressure_pa = normalize_pressure(temperature[pressure_dim].values)
     latitude_deg = normalize_latitude(temperature[latitude_dim].values)
@@ -112,7 +91,7 @@ def solve_ke_xarray(
     # Sort input arrays by normalized coordinates
     temp_sorted = temperature.sortby(
         [pressure_dim, latitude_dim], ascending=True)
-    v_sorted = v_mean.sortby([pressure_dim, latitude_dim], ascending=True)
+    v_sorted = v.sortby([pressure_dim, latitude_dim], ascending=True)
     vt_sorted = vt_eddy.sortby([pressure_dim, latitude_dim], ascending=True)
     vu_sorted = vu_eddy.sortby([pressure_dim, latitude_dim], ascending=True)
 
@@ -228,8 +207,9 @@ def solve_ke_LHS_xarray(
                 pressure_dim = candidate
                 break
         if pressure_dim is None:
-            raise ValueError(f"Could not auto-detect pressure dimension. Available dims: {temp_base.dims}")
-    
+            raise ValueError(
+                f"Could not auto-detect pressure dimension. Available dims: {temp_base.dims}")
+
     if latitude_dim is None:
         latitude_candidates = ['latitude', 'lat', 'y']
         for candidate in latitude_candidates:
@@ -237,8 +217,9 @@ def solve_ke_LHS_xarray(
                 latitude_dim = candidate
                 break
         if latitude_dim is None:
-            raise ValueError(f"Could not auto-detect latitude dimension. Available dims: {temp_base.dims}")
-    
+            raise ValueError(
+                f"Could not auto-detect latitude dimension. Available dims: {temp_base.dims}")
+
     # Normalize and sort coordinates
     pressure_pa = normalize_pressure(temp_base[pressure_dim].values)
     latitude_deg = normalize_latitude(temp_base[latitude_dim].values)

@@ -8,7 +8,7 @@ from typing import Tuple
 
 def normalize_pressure(pressure: np.ndarray) -> np.ndarray:
     """
-    Ensure pressure is in Pa and decreasing order.
+    Ensure pressure is in Pa and in 1-1000 hPa order (increasing numerical value).
     """
     p = np.asarray(pressure).copy()
 
@@ -16,8 +16,8 @@ def normalize_pressure(pressure: np.ndarray) -> np.ndarray:
     if np.median(p) < 2000:
         p = p * 100.0  # hPa to Pa
 
-    # Ensure decreasing order
-    if p[0] > p[-1]:
+    # Ensure increasing order (1 to 1000 hPa numerically)
+    if len(p) > 1 and p[0] > p[-1]:
         p = p[::-1]
 
     return p
@@ -34,7 +34,7 @@ def normalize_latitude(latitude: np.ndarray) -> np.ndarray:
         lat = np.rad2deg(lat)
 
     # Ensure south-to-north order
-    if lat[0] > lat[-1]:
+    if len(lat) > 1 and lat[0] > lat[-1]:
         lat = lat[::-1]
 
     return lat

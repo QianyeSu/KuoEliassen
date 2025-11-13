@@ -142,53 +142,72 @@ jobs:
           name: wheel-${{ matrix.python }}-${{ matrix.buildplat[1] }}
           path: ./wheelhouse/*.whl
 
-  build_sdist:
-    name: Build source distribution
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Build sdist
-        run: |
-          python -m pip install --upgrade pip build
-          python -m build --sdist
-
-      - name: Upload sdist
-        uses: actions/upload-artifact@v4
-        with:
-          name: sdist
-          path: dist/*.tar.gz
+  # Source distribution build disabled - binary wheels only (see comment below)
+  # NOTE: Source distribution (sdist) is NOT built for this release workflow
+  #       Only binary wheels are published to PyPI for security/licensing reasons
+  #       Users can still install via: pip install kuoeliassen
+  #
+  # To build locally with source:
+  #   python -m build --sdist
+  #
+  # Uncomment the build_sdist job below if you later want to publish source code
+  #
+  # build_sdist:
+  #   name: Build source distribution
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
+  #
+  #     - name: Setup Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.11"
+  #
+  #     - name: Build sdist
+  #       run: |
+  #         python -m pip install --upgrade pip build
+  #         python -m build --sdist
+  #
+  #     - name: Upload sdist
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: sdist
+  #         path: dist/*.tar.gz
 
   # Publish to PyPI (only on tags or release)
+  # NOTE: Only wheel distributions are published (sdist is skipped for binary-only release)
   publish:
-    name: Publish to PyPI
+    name: Publish to PyPI (wheels only)
     if: github.event_name == 'release' && github.event.action == 'published'
-    needs: [build_wheels, build_sdist]
+    needs: [build_wheels]
     runs-on: ubuntu-latest
     permissions:
       id-token: write # Use trusted publishing
     steps:
-      - name: Download all artifacts
+      - name: Download all wheel artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: "*"
+          pattern: wheel-*
           path: dist-artifacts
           merge-multiple: true
 
-      - name: Prepare dist directory
+      - name: Prepare dist directory (wheels only)
         run: |
           mkdir -p dist
           find dist-artifacts -name "*.whl" -exec cp {} dist/ \;
-          find dist-artifacts -name "*.tar.gz" -exec cp {} dist/ \;
-          ls -la dist/
+          echo "📦 Prepared wheels for PyPI:"
+          ls -lh dist/
+          echo ""
+          echo "Total wheels: $(ls dist/*.whl | wc -l)"
+
+      - name: Verify wheels
+        run: |
+          python -m pip install --upgrade pip twine
+          python -m twine check dist/*.whl
+          echo "✓ All wheels passed verification"
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -196,8 +215,9 @@ jobs:
           password: ${{ secrets.PYPI_API_TOKEN }}
 
   # Test installation (multi-platform validation)
+  # Verifies that binary wheels can be installed on different platforms
   test_install:
-    name: Test installation on ${{ matrix.os }} Python ${{ matrix.python-version }}
+    name: Test wheel installation on ${{ matrix.os }} Python ${{ matrix.python-version }}
     needs: [build_wheels]
     runs-on: ${{ matrix.os }}
     strategy:

@@ -78,10 +78,15 @@ jobs:
           echo "LDFLAGS=-L/usr/local/lib" >> $GITHUB_ENV
           echo "CPPFLAGS=-I/usr/local/include" >> $GITHUB_ENV
 
-      - name: Install Python dependencies
+      - name: Install Python build backend (meson-python)
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install meson ninja numpy scipy xarray pytest pytest-cov
+          python -m pip install "meson-python>=0.15.0" meson ninja numpy
+          python -m pip show meson-python meson ninja
+
+      - name: Install Python dependencies
+        run: |
+          pip install scipy xarray pytest pytest-cov
 
       - name: Build and install package
         run: |

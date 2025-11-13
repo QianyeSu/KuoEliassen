@@ -32,7 +32,13 @@ jobs:
       - name: Install build dependencies via conda
         shell: bash -l {0}
         run: |
-          conda install -y -c conda-forge gcc gfortran gxx cmake ninja meson make
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            # macOS: Use gfortran and clang from conda-forge
+            conda install -y -c conda-forge gfortran cmake ninja meson make
+          else
+            # Linux and Windows: Use gcc, gfortran, g++
+            conda install -y -c conda-forge gcc gfortran gxx cmake ninja meson make
+          fi
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install "meson-python>=0.15.0" numpy scipy xarray pytest pytest-cov coverage[toml]
           if [ "$RUNNER_OS" = "Windows" ]; then pip install delvewheel; fi
@@ -40,23 +46,40 @@ jobs:
       - name: Verify compiler environment
         shell: bash -l {0}
         run: |
-          gcc --version | head -1
-          gfortran --version | head -1
-          g++ --version | head -1
-          export CC=gcc
-          export FC=gfortran
-          export CXX=g++
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            # macOS: use clang for C/C++, gfortran for Fortran
+            echo "macOS detected - using system clang + conda gfortran"
+            clang --version | head -1
+            gfortran --version | head -1
+            export CC=clang
+            export CXX=clang++
+            export FC=gfortran
+          else
+            # Linux and Windows: use gcc toolchain
+            gcc --version | head -1
+            gfortran --version | head -1
+            g++ --version | head -1
+            export CC=gcc
+            export CXX=g++
+            export FC=gfortran
+          fi
           echo "Compilers: CC=$CC, FC=$FC, CXX=$CXX"
           meson --version
 
       - name: Build and install package
         shell: bash -l {0}
         run: |
-          export CC=gcc
-          export FC=gfortran
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            export CC=clang
+            export CXX=clang++
+            export FC=gfortran
+          else
+            export CC=gcc
+            export CXX=g++
+            export FC=gfortran
+          fi
           export F77=gfortran
           export F90=gfortran
-          export CXX=g++
           export FFLAGS="-O3 -fPIC -fopenmp -fno-second-underscore -std=legacy"
           export CFLAGS="-O3 -fPIC -fopenmp"
           export LDFLAGS="-fopenmp"

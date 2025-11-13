@@ -32,13 +32,8 @@ jobs:
       - name: Install build dependencies via conda
         shell: bash -l {0}
         run: |
-          if [ "$RUNNER_OS" = "macOS" ]; then
-            # macOS: Use gfortran and clang from conda-forge
-            conda install -y -c conda-forge gfortran cmake ninja meson make
-          else
-            # Linux and Windows: Use gcc, gfortran, g++
-            conda install -y -c conda-forge gcc gfortran gxx cmake ninja meson make
-          fi
+          # All platforms use conda-forge gcc toolchain
+          conda install -y -c conda-forge gcc gfortran gxx cmake ninja meson make
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install "meson-python>=0.15.0" numpy scipy xarray pytest pytest-cov coverage[toml]
           if [ "$RUNNER_OS" = "Windows" ]; then pip install delvewheel; fi
@@ -46,48 +41,27 @@ jobs:
       - name: Verify compiler environment
         shell: bash -l {0}
         run: |
-          if [ "$RUNNER_OS" = "macOS" ]; then
-            # macOS: use clang for C/C++, gfortran for Fortran
-            echo "macOS detected - using system clang + conda gfortran"
-            clang --version | head -1
-            gfortran --version | head -1
-            export CC=clang
-            export CXX=clang++
-            export FC=gfortran
-          else
-            # Linux and Windows: use gcc toolchain
-            gcc --version | head -1
-            gfortran --version | head -1
-            g++ --version | head -1
-            export CC=gcc
-            export CXX=g++
-            export FC=gfortran
-          fi
+          gcc --version | head -1
+          gfortran --version | head -1
+          g++ --version | head -1
+          export CC=gcc
+          export CXX=g++
+          export FC=gfortran
           echo "Compilers: CC=$CC, FC=$FC, CXX=$CXX"
           meson --version
 
       - name: Build and install package
         shell: bash -l {0}
         run: |
-          if [ "$RUNNER_OS" = "macOS" ]; then
-            export CC=clang
-            export CXX=clang++
-            export FC=gfortran
-            # Use meson native file for macOS to handle mixed compilers
-            MESON_NATIVE_FILE=".github/workflows/macos-native.ini"
-            PIP_INSTALL_ARGS="--config-settings=setup-args=-Dnative_file=$MESON_NATIVE_FILE"
-          else
-            export CC=gcc
-            export CXX=g++
-            export FC=gfortran
-            PIP_INSTALL_ARGS=""
-          fi
+          export CC=gcc
+          export CXX=g++
+          export FC=gfortran
           export F77=gfortran
           export F90=gfortran
           export FFLAGS="-O3 -fPIC -fopenmp -fno-second-underscore -std=legacy"
           export CFLAGS="-O3 -fPIC -fopenmp"
           export LDFLAGS="-fopenmp"
-          pip install -e . --no-build-isolation $PIP_INSTALL_ARGS -v
+          pip install -e . --no-build-isolation -v
 
       - name: Verify installation
         shell: bash -l {0}

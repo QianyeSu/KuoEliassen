@@ -171,9 +171,24 @@ jobs:
       - name: Run tests
         run: |
           pytest tests/ -v --cov=kuoeliassen --cov-report=xml --cov-report=term
+        # Allow this step to fail; we'll capture results in next step
+        continue-on-error: false
+
+      - name: Generate coverage report
+        if: always()
+        run: |
+          echo "=== Coverage report generated ==="
+          if [ -f coverage.xml ]; then
+            echo "coverage.xml exists"
+          else
+            echo "coverage.xml not found, attempting to generate..."
+            coverage xml --fail-under=0 || echo "Failed to generate coverage.xml manually"
+          fi
+        shell: bash
+        continue-on-error: true
 
       - name: Upload coverage
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage.xml

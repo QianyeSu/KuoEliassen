@@ -32,28 +32,40 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gfortran gcc g++ ninja-build
+          echo "gfortran version:"
           gfortran --version
 
       # macOS setup
-      - name: Install macOS dependencies
+      - name: Install macOS dependencies and build tools
         if: runner.os == 'macOS'
         run: |
+          set -e
+          echo "Updating Homebrew..."
           brew update
+          
+          echo "Installing gcc and ninja..."
           brew install gcc ninja
-          # Verify gfortran is available (might be versioned like gfortran-14)
-          gfortran --version || (ls /usr/local/bin/gfortran* 2>/dev/null || echo "gfortran not found, trying alternatives...")
-
-      - name: Link gfortran (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          # macOS may install gfortran with version suffix, create symlink if needed
-          GFORTRAN=$(compgen -c | grep -E '^gfortran' | head -1)
-          if [ -z "$GFORTRAN" ]; then
-            GFORTRAN=$(find /usr/local/Cellar -name "gfortran-*" -type f 2>/dev/null | head -1)
-            if [ -n "$GFORTRAN" ]; then
-              sudo ln -sf "$GFORTRAN" /usr/local/bin/gfortran
-            fi
+          
+          # Verify gfortran installation
+          echo "Checking gfortran..."
+          which gfortran || echo "gfortran not in PATH"
+          gfortran --version || echo "gfortran --version failed"
+          
+          # Check Homebrew installation directory
+          BREW_PREFIX=$(brew --prefix)
+          echo "Homebrew prefix: $BREW_PREFIX"
+          ls -l "$BREW_PREFIX/bin/" | grep gfortran || echo "No gfortran in brew bin"
+          
+          # Create symlink if versioned
+          GFORT_VERSIONED=$(ls "$BREW_PREFIX/bin/gfortran"-* 2>/dev/null | head -1)
+          if [ -n "$GFORT_VERSIONED" ]; then
+            echo "Found versioned gfortran: $GFORT_VERSIONED"
+            sudo ln -sf "$GFORT_VERSIONED" /usr/local/bin/gfortran
           fi
+          
+          # Final verification
+          echo "Final gfortran verification:"
+          which gfortran
           gfortran --version
 
       # Windows setup
@@ -78,10 +90,11 @@ jobs:
           echo "LDFLAGS=-L/usr/local/lib" >> $GITHUB_ENV
           echo "CPPFLAGS=-I/usr/local/include" >> $GITHUB_ENV
 
-      - name: Install Python build backend (meson-python)
+      - name: Install Python build backend and build tools (pre-install before isolation build)
         run: |
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install "meson-python>=0.15.0" meson ninja numpy
+          echo "Verifying installations:"
           python -m pip show meson-python meson ninja
 
       - name: Install Python dependencies

@@ -239,23 +239,41 @@ jobs:
           merge-multiple: true
 
       - name: Install and test wheel
-        shell: bash
+        shell: python
         run: |
-          # Find the appropriate wheel for this platform
-          wheel=$(ls wheels/*.whl | grep cp$(echo ${{ matrix.python-version }} | tr -d .) | head -1)
-          if [ -z "$wheel" ]; then
-            echo "No wheel found for Python ${{ matrix.python-version }}"
-            exit 1
-          fi
-          echo "Installing wheel: $wheel"
-          pip install "$wheel"
-
-          # Test basic import and functionality
-          python -c "
+          import os
+          import glob
+          import subprocess
+          import sys
+          import sysconfig
+          import re
+          
+          # Get Python version tag
+          py_ver = f"cp{sys.version_info.major}{sys.version_info.minor}"
+          
+          # Get platform tag
+          plat = sysconfig.get_platform()
+          plat_tag = re.sub(r'[-.]', '_', plat)
+          
+          print(f"Looking for wheel: {py_ver} on platform {plat_tag}")
+          
+          # Find matching wheel
+          wheels = glob.glob("wheels/*.whl")
+          matching_wheels = [w for w in wheels if py_ver in w and plat_tag in w]
+          
+          if not matching_wheels:
+            print(f"ERROR: No wheel found for {py_ver} on {plat_tag}")
+            print(f"Available wheels: {wheels}")
+            sys.exit(1)
+          
+          wheel_file = matching_wheels[0]
+          print(f"Installing wheel: {wheel_file}")
+          
+          subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "pip"], check=True)
+          subprocess.run([sys.executable, "-m", "pip", "install", wheel_file], check=True)
+          
+          print("Testing import...")
           import kuoeliassen
           from kuoeliassen import solve_ke
           from kuoeliassen.xarray_interface import solve_ke_xarray
-          print('✓ KuoEliassen imported successfully')
-          print(f'  Version: {kuoeliassen.__version__}')
-          print('✓ All imports successful')
-          "
+          print(f"OK: KuoEliassen {kuoeliassen.__version__} imported successfully")

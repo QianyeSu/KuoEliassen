@@ -238,6 +238,10 @@ jobs:
           path: wheels
           merge-multiple: true
 
+      - name: Install packaging library
+        run: |
+          python -m pip install --upgrade pip packaging
+
       - name: Install and test wheel
         shell: python
         run: |
@@ -245,35 +249,56 @@ jobs:
           import glob
           import subprocess
           import sys
-          import sysconfig
-          import re
+          from packaging import tags
 
-          # Get Python version tag
+          # Get Python version tag (e.g., cp312)
           py_ver = f"cp{sys.version_info.major}{sys.version_info.minor}"
 
-          # Get platform tag
-          plat = sysconfig.get_platform()
-          plat_tag = re.sub(r'[-.]', '_', plat)
+          # Get all compatible platform tags for this system
+          compatible_tags = list(tags.sys_tags())
+          print(f"Python: {py_ver}")
+          print(f"Platform tags (first 5): {[str(t) for t in compatible_tags[:5]]}")
 
-          print(f"Looking for wheel: {py_ver} on platform {plat_tag}")
-
-          # Find matching wheel
+          # Find all wheels
           wheels = glob.glob("wheels/*.whl")
-          matching_wheels = [w for w in wheels if py_ver in w and plat_tag in w]
+          print(f"\nAvailable wheels ({len(wheels)}):")
+          for w in wheels:
+            print(f"  {os.path.basename(w)}")
+
+          # Parse wheel filenames and find compatible ones
+          from packaging.utils import parse_wheel_filename
+
+          matching_wheels = []
+          for wheel_path in wheels:
+            try:
+              name, version, build, wheel_tags = parse_wheel_filename(os.path.basename(wheel_path))
+              # Check if any wheel tag is compatible with our system
+              for wheel_tag in wheel_tags:
+                if wheel_tag in compatible_tags:
+                  matching_wheels.append(wheel_path)
+                  print(f"\n✓ Compatible wheel found: {os.path.basename(wheel_path)}")
+                  print(f"  Matching tag: {wheel_tag}")
+                  break
+            except Exception as e:
+              print(f"  ⚠ Could not parse {os.path.basename(wheel_path)}: {e}")
 
           if not matching_wheels:
-            print(f"ERROR: No wheel found for {py_ver} on {plat_tag}")
-            print(f"Available wheels: {wheels}")
+            print(f"\n❌ ERROR: No compatible wheel found for {py_ver}")
+            print(f"Available wheels: {[os.path.basename(w) for w in wheels]}")
+            print(f"Compatible platform tags: {[str(t) for t in compatible_tags[:10]]}")
             sys.exit(1)
 
           wheel_file = matching_wheels[0]
-          print(f"Installing wheel: {wheel_file}")
+          print(f"\n📦 Installing wheel: {os.path.basename(wheel_file)}")
 
+          # Upgrade pip first
           subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "pip"], check=True)
+
+          # Install the wheel
           subprocess.run([sys.executable, "-m", "pip", "install", wheel_file], check=True)
 
-          print("Testing import...")
+          print("\n🧪 Testing import...")
           import kuoeliassen
           from kuoeliassen import solve_ke
           from kuoeliassen.xarray_interface import solve_ke_xarray
-          print(f"OK: KuoEliassen {kuoeliassen.__version__} imported successfully")
+          print(f"✅ SUCCESS: KuoEliassen {kuoeliassen.__version__} imported successfully")

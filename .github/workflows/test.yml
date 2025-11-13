@@ -38,7 +38,22 @@ jobs:
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
         run: |
+          brew update
           brew install gcc ninja
+          # Verify gfortran is available (might be versioned like gfortran-14)
+          gfortran --version || (ls /usr/local/bin/gfortran* 2>/dev/null || echo "gfortran not found, trying alternatives...")
+
+      - name: Link gfortran (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # macOS may install gfortran with version suffix, create symlink if needed
+          GFORTRAN=$(compgen -c | grep -E '^gfortran' | head -1)
+          if [ -z "$GFORTRAN" ]; then
+            GFORTRAN=$(find /usr/local/Cellar -name "gfortran-*" -type f 2>/dev/null | head -1)
+            if [ -n "$GFORTRAN" ]; then
+              sudo ln -sf "$GFORTRAN" /usr/local/bin/gfortran
+            fi
+          fi
           gfortran --version
 
       # Windows setup
@@ -54,6 +69,14 @@ jobs:
         run: |
           echo "CC=gcc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "FC=gfortran" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Set macOS compiler environment
+        if: runner.os == 'macOS'
+        run: |
+          echo "CC=gcc" >> $GITHUB_ENV
+          echo "FC=gfortran" >> $GITHUB_ENV
+          echo "LDFLAGS=-L/usr/local/lib" >> $GITHUB_ENV
+          echo "CPPFLAGS=-I/usr/local/include" >> $GITHUB_ENV
 
       - name: Install Python dependencies
         run: |

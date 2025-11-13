@@ -1,46 +1,82 @@
-# Build artifacts
-builddir/
-build/
-dist/
-*.egg-info/
+ # Byte-compiled / optimized / DLL files
 __pycache__/
+*.py[cod]
+*$py.class
 *.pyc
-*.pyo
-*.pyd
+
+# C extensions
 *.so
 *.dylib
 *.dll
-*.o
-*.mod
+*.pyd
 
-# Meson
-.mesonpy-*
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Meson build directories
+**/build/
+**/builddir/
+**/.mesonbuild/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
 # IDE
+.claude/
 .vscode/
 .idea/
 *.swp
+*.swo
 
-# Testing
-.pytest_cache/
-.coverage
+# Jupyter Notebook
+.ipynb_checkpoints
 
-# Data
-*.nc
-*.h5
-*.hdf5
+# Logs and databases
+*.log
+*.sqlite
 
-# Outputs
-*.png
-*.pdf
-
-# Jupyter
-.ipynb_checkpoints/
-
-# Virtual env
-venv/
-env/
-
-# OS
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db

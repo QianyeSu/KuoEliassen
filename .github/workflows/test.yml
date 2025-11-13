@@ -160,7 +160,7 @@ jobs:
 
           # Find all kuoeliassen_module*.pyd files
           $pyd_files = Get-ChildItem -Recurse -Filter "*kuoeliassen_module*.pyd" -Path $sitepackages -ErrorAction SilentlyContinue
-          
+
           if ($pyd_files) {
             Write-Host "Found $($pyd_files.Count) .pyd file(s)"
             foreach ($pyd in $pyd_files) {
@@ -187,7 +187,7 @@ jobs:
         run: |
           echo "=== Checking if Fortran module can be imported ==="
           python -c "import sys; print('Python executable:', sys.executable)"
-          
+
           $sitepackages = python -c "import site; print(site.getsitepackages()[0])"
           echo "Site packages: $sitepackages"
 

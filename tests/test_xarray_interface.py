@@ -203,7 +203,10 @@ class TestSolveKEXarrayCoordinates:
             temperature=ds['temp'],
             heating=ds['heating'],
             vt_eddy=ds['vt_eddy'],
-            vu_eddy=ds['vu_eddy'], pressure_dim='pressure', latitude_dim='latitude', qgpv=True
+            vu_eddy=ds['vu_eddy'],
+            pressure_dim='lev',
+            latitude_dim='lat',
+            qgpv=True
         )
 
         # Should work and preserve dimension names

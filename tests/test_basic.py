@@ -192,8 +192,8 @@ class TestSolveKELHS:
             'temp_base': np.random.randn(nz, ny, nt) * 10 + 273.15,
             'psi_current': np.random.randn(nz, ny, nt) * 1e9,
             'temp_current': np.random.randn(nz, ny, nt) * 10 + 273.15,
-            'level': np.array([1000, 850, 700, 500, 300], dtype=np.float64) * 100,
-            'lat': np.array([30, 35, 40], dtype=np.float64),
+            'pressure': np.array([1000, 850, 700, 500, 300], dtype=np.float64) * 100,
+            'latitude': np.array([30, 35, 40], dtype=np.float64),
         }
         return data
 
@@ -372,14 +372,15 @@ class TestEdgeCases:
         from kuoeliassen import solve_ke
 
         nz = 5
+        ny = 1  # Single latitude point
 
-        v_mean = np.random.randn(nz)
-        temp = np.random.randn(nz) + 273.15
-        heating = np.random.randn(nz) * 0.01
-        vt_eddy = np.random.randn(nz) * 0.1
-        vu_eddy = np.random.randn(nz) * 0.1
+        v_mean = np.random.randn(nz, ny)  # Shape (nz, ny) not (nz,)
+        temp = np.random.randn(nz, ny) + 273.15
+        heating = np.random.randn(nz, ny) * 0.01
+        vt_eddy = np.random.randn(nz, ny) * 0.1
+        vu_eddy = np.random.randn(nz, ny) * 0.1
         level = np.array([1000, 850, 700, 500, 300], dtype=np.float64) * 100
-        lat = np.array([30.0], dtype=np.float64)
+        lat = np.array([30.0], dtype=np.float64)  # Single latitude
 
         result = solve_ke(
             v=v_mean,
@@ -392,7 +393,7 @@ class TestEdgeCases:
             qgpv=True
         )
 
-        assert result['PSI_Q'].shape == (nz,)
+        assert result['PSI_Q'].shape == (nz, ny)
 
     def test_dtype_conversion(self):
         """Test that float32 inputs are converted to float64."""

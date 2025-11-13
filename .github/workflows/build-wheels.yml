@@ -276,20 +276,20 @@ jobs:
               for wheel_tag in wheel_tags:
                 if wheel_tag in compatible_tags:
                   matching_wheels.append(wheel_path)
-                  print(f"\n✓ Compatible wheel found: {os.path.basename(wheel_path)}")
+                  print(f"\n[OK] Compatible wheel found: {os.path.basename(wheel_path)}")
                   print(f"  Matching tag: {wheel_tag}")
                   break
             except Exception as e:
-              print(f"  ⚠ Could not parse {os.path.basename(wheel_path)}: {e}")
+              print(f"  [WARN] Could not parse {os.path.basename(wheel_path)}: {e}")
 
           if not matching_wheels:
-            print(f"\n❌ ERROR: No compatible wheel found for {py_ver}")
+            print(f"\n[ERROR] No compatible wheel found for {py_ver}")
             print(f"Available wheels: {[os.path.basename(w) for w in wheels]}")
             print(f"Compatible platform tags: {[str(t) for t in compatible_tags[:10]]}")
             sys.exit(1)
 
           wheel_file = matching_wheels[0]
-          print(f"\n📦 Installing wheel: {os.path.basename(wheel_file)}")
+          print(f"\n[INSTALL] Installing wheel: {os.path.basename(wheel_file)}")
 
           # Upgrade pip first
           subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "pip"], check=True)
@@ -297,8 +297,8 @@ jobs:
           # Install the wheel
           subprocess.run([sys.executable, "-m", "pip", "install", wheel_file], check=True)
 
-          print("\n🧪 Testing import...")
+          print("\n[TEST] Testing import...")
           import kuoeliassen
           from kuoeliassen import solve_ke
           from kuoeliassen.xarray_interface import solve_ke_xarray
-          print(f"✅ SUCCESS: KuoEliassen {kuoeliassen.__version__} imported successfully")
+          print(f"[SUCCESS] KuoEliassen {kuoeliassen.__version__} imported successfully")

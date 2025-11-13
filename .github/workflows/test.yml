@@ -31,7 +31,35 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y gfortran gcc g++ ninja-build libomp-dev
+
+          # Add GCC 13+ repository for latest compiler versions
+          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+
+          # Install latest GCC/gfortran versions (13+)
+          sudo apt-get install -y build-essential
+          sudo apt-get install -y gcc-13 gfortran-13 g++-13
+          sudo apt-get install -y gcc-14 gfortran-14 g++-14 || echo "GCC-14 not available, using GCC-13"
+
+          # Install OpenMP and math libraries
+          sudo apt-get install -y libomp-dev libopenblas-dev libblas-dev liblapack-dev
+          # Install build tools
+          sudo apt-get install -y meson ninja-build pkg-config cmake
+
+          # Set up compiler alternatives - prioritize GCC 13+
+          if [ -x "/usr/bin/gcc-14" ]; then
+            echo "Setting up GCC-14 as primary compiler"
+            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 140 --slave /usr/bin/g++ g++ /usr/bin/g++-14
+            sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-14 140
+            sudo update-alternatives --set gcc /usr/bin/gcc-14
+            sudo update-alternatives --set gfortran /usr/bin/gfortran-14
+          else
+            echo "Setting up GCC-13 as primary compiler"
+            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 130 --slave /usr/bin/g++ g++ /usr/bin/g++-13
+            sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-13 130
+            sudo update-alternatives --set gcc /usr/bin/gcc-13
+            sudo update-alternatives --set gfortran /usr/bin/gfortran-13
+          fi
 
           # Pre-install build backend to avoid pip isolation issues
           python -m pip install --upgrade pip setuptools wheel
@@ -131,9 +159,50 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install "meson-python>=0.15.0" meson ninja numpy
 
+      - name: Verify compiler environment
+        run: |
+          echo "=== Compiler Environment Verification ==="
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            gcc --version | head -1
+            gfortran --version | head -1
+            
+            # Check gfortran version is 13+
+            GFORTRAN_VERSION=$(gfortran --version | head -1 | grep -oE '[0-9]+\.[0-9]+' | head -1 | cut -d. -f1)
+            echo "gfortran major version: $GFORTRAN_VERSION"
+            if [ "$GFORTRAN_VERSION" -ge 13 ]; then
+              echo "[OK] gfortran $GFORTRAN_VERSION.x meets requirement (13+)"
+            else
+              echo "[WARN] gfortran $GFORTRAN_VERSION.x is below requirement (13+)"
+            fi
+          elif [ "$RUNNER_OS" = "macOS" ]; then
+            $CC --version | head -1
+            $FC --version | head -1
+          elif [ "$RUNNER_OS" = "Windows" ]; then
+            gcc --version | head -1
+            gfortran --version | head -1
+          fi
+          
+          echo "=== Setting up build environment ==="
+          if [ "$RUNNER_OS" = "Linux" ] || [ "$RUNNER_OS" = "Windows" ]; then
+            export CC=gcc
+            export FC=gfortran
+            export F77=gfortran
+            export F90=gfortran
+            export CXX=g++
+          fi
+          echo "Compilers: CC=$CC, FC=$FC, CXX=$CXX"
+          
+          echo "=== Testing f2py with current gfortran ==="
+          echo 'subroutine test_compile()
+          print *, "gfortran compilation test"
+          end subroutine' > test.f90
+          python -m numpy.f2py -c test.f90 -m test_mod --fcompiler=gnu95 && echo "[OK] f2py works" || echo "[WARN] f2py test failed"
+          rm -f test.f90 test_mod*.so test_mod*.pyd *.mod
+        shell: bash
+
       - name: Install Python dependencies
         run: |
-          pip install scipy xarray pytest pytest-cov
+          pip install scipy xarray pytest pytest-cov coverage[toml]
           # Windows: add delvewheel for DLL dependency repair
           if [ "$RUNNER_OS" = "Windows" ]; then pip install delvewheel; fi
         shell: bash
@@ -148,7 +217,41 @@ jobs:
 
       - name: Build and install package
         run: |
-          pip install -e . --no-build-isolation
+          echo "=== Building package ==="
+          if pip install -e . --no-build-isolation; then
+            echo "[OK] Package installed successfully"
+          else
+            echo "[ERROR] Package installation failed"
+            echo "=== Attempting manual build with detailed output ==="
+            
+            # Set explicit compiler environment variables
+            if [ "$RUNNER_OS" = "Linux" ] || [ "$RUNNER_OS" = "Windows" ]; then
+              export FC=gfortran
+              export F77=gfortran
+              export F90=gfortran
+              export CC=gcc
+              export CXX=g++
+            fi
+            export FFLAGS="-O3 -fPIC -fopenmp -fno-second-underscore -std=legacy"
+            export CFLAGS="-O3 -fPIC -fopenmp"
+            export LDFLAGS="-fopenmp"
+            export NPY_NUM_BUILD_JOBS=2
+            
+            echo "Environment: FC=$FC, CC=$CC"
+            echo "FFLAGS=$FFLAGS"
+            
+            # Clean build artifacts
+            rm -rf build/ dist/ *.egg-info/
+            find . -name "*.so" -delete 2>/dev/null || true
+            find . -name "*.pyd" -delete 2>/dev/null || true
+            
+            # Retry with verbose output
+            python -m pip install -e . --no-build-isolation -v || exit 1
+          fi
+          
+          echo "=== Checking compiled modules ==="
+          find src/ -name "*.so" -o -name "*.pyd" | head -10 || echo "No compiled extensions found"
+        shell: bash
 
       - name: Repair Windows DLL dependencies with delvewheel
         if: runner.os == 'Windows'
@@ -228,7 +331,22 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest tests/ -v --cov=kuoeliassen --cov-report=xml --cov-report=term
+          echo "=== Pre-test verification ==="
+          python -c "import sys; print('Python:', sys.version)"
+          python -c "import numpy; print('NumPy:', numpy.__version__)"
+          python -c "
+          try:
+              from kuoeliassen import solve_ke
+              print('[OK] kuoeliassen module imported successfully')
+          except Exception as e:
+              print('[ERROR] kuoeliassen import failed:', e)
+              exit(1)
+          "
+          
+          echo ""
+          echo "=== Running tests with coverage ==="
+          pytest tests/ -v --cov=kuoeliassen --cov-report=xml --cov-report=term-missing
+        shell: bash
         # Allow this step to fail; we'll capture results in next step
         continue-on-error: false
 

@@ -73,8 +73,8 @@ class TestSolveKEBasic:
             heating=basic_data['heating'],
             vt_eddy=basic_data['vt_eddy'],
             vu_eddy=basic_data['vu_eddy'],
-            p=basic_data['p'],
-            phi=basic_data['phi'],
+            pressure=basic_data['p'],
+            latitude=basic_data['phi'],
             qgpv=True
         )
 
@@ -110,8 +110,8 @@ class TestSolveKEBasic:
             rad_heating=rad_heating,
             vt_eddy=basic_data['vt_eddy'],
             vu_eddy=basic_data['vu_eddy'],
-            p=basic_data['p'],
-            phi=basic_data['phi'],
+            pressure=basic_data['p'],
+            latitude=basic_data['phi'],
             qgpv=True
         )
 
@@ -138,8 +138,8 @@ class TestSolveKEBasic:
             heating=basic_data['heating'],
             vt_eddy=basic_data['vt_eddy'],
             vu_eddy=basic_data['vu_eddy'],
-            p=basic_data['p'],
-            phi=basic_data['phi'],
+            pressure=basic_data['p'],
+            latitude=basic_data['phi'],
             qgpv=False
         )
 
@@ -159,8 +159,8 @@ class TestSolveKEBasic:
                 # No heating parameter
                 vt_eddy=basic_data['vt_eddy'],
                 vu_eddy=basic_data['vu_eddy'],
-                p=basic_data['p'],
-                phi=basic_data['phi'],
+                pressure=basic_data['p'],
+                latitude=basic_data['phi'],
                 qgpv=True
             )
 
@@ -177,8 +177,8 @@ class TestSolveKEBasic:
                 rad_heating=basic_data['heating'],
                 vt_eddy=basic_data['vt_eddy'],
                 vu_eddy=basic_data['vu_eddy'],
-                p=basic_data['p'],
-                phi=basic_data['phi'],
+                pressure=basic_data['p'],
+                latitude=basic_data['phi'],
                 qgpv=True
             )
 
@@ -210,8 +210,8 @@ class TestSolveKELHS:
             temperature=basic_data['temperature'],
             vt_eddy=basic_data['vt_eddy'],
             vu_eddy=basic_data['vu_eddy'],
-            p=basic_data['p'],
-            phi=basic_data['phi'],
+            pressure=basic_data['p'],
+            latitude=basic_data['phi'],
             qgpv=True
         )
 
@@ -235,8 +235,8 @@ class TestSolveKELHS:
             temperature=basic_data['temperature'],
             vt_eddy=basic_data['vt_eddy'],
             vu_eddy=basic_data['vu_eddy'],
-            p=basic_data['p'],
-            phi=basic_data['phi'],
+            pressure=basic_data['p'],
+            latitude=basic_data['phi'],
             qgpv=False
         )
 
@@ -345,8 +345,8 @@ class TestEdgeCases:
         heating = np.random.randn(nz, ny) * 0.01
         vt_eddy = np.random.randn(nz, ny) * 0.1
         vu_eddy = np.random.randn(nz, ny) * 0.1
-        p = np.array([1000, 850, 700, 500, 300], dtype=np.float64) * 100
-        phi = np.array([30, 35, 40], dtype=np.float64)
+        pressure = np.array([1000, 850, 700, 500, 300], dtype=np.float64) * 100
+        latitude = np.array([30, 35, 40], dtype=np.float64)
 
         result = solve_ke(
             v_mean=v_mean,
@@ -354,8 +354,8 @@ class TestEdgeCases:
             heating=heating,
             vt_eddy=vt_eddy,
             vu_eddy=vu_eddy,
-            p=p,
-            phi=phi,
+            pressure=pressure,
+            latitude=latitude,
             qgpv=True
         )
 
@@ -372,8 +372,8 @@ class TestEdgeCases:
         heating = np.random.randn(nz) * 0.01
         vt_eddy = np.random.randn(nz) * 0.1
         vu_eddy = np.random.randn(nz) * 0.1
-        p = np.array([1000, 850, 700, 500, 300], dtype=np.float64) * 100
-        phi = np.array([30.0], dtype=np.float64)
+        pressure = np.array([1000, 850, 700, 500, 300], dtype=np.float64) * 100
+        latitude = np.array([30.0], dtype=np.float64)
 
         result = solve_ke(
             v_mean=v_mean,
@@ -381,8 +381,8 @@ class TestEdgeCases:
             heating=heating,
             vt_eddy=vt_eddy,
             vu_eddy=vu_eddy,
-            p=p,
-            phi=phi,
+            pressure=pressure,
+            latitude=latitude,
             qgpv=True
         )
 
@@ -400,8 +400,8 @@ class TestEdgeCases:
         heating = (np.random.randn(nz, ny) * 0.01).astype(np.float32)
         vt_eddy = (np.random.randn(nz, ny) * 0.1).astype(np.float32)
         vu_eddy = (np.random.randn(nz, ny) * 0.1).astype(np.float32)
-        p = np.array([1000, 850, 700, 500, 300], dtype=np.float32) * 100
-        phi = np.array([30, 35, 40], dtype=np.float32)
+        pressure = np.array([1000, 850, 700, 500, 300], dtype=np.float32) * 100
+        latitude = np.array([30, 35, 40], dtype=np.float32)
 
         # Should not raise error
         result = solve_ke(
@@ -410,8 +410,8 @@ class TestEdgeCases:
             heating=heating,
             vt_eddy=vt_eddy,
             vu_eddy=vu_eddy,
-            p=p,
-            phi=phi,
+            pressure=pressure,
+            latitude=latitude,
             qgpv=True
         )
 

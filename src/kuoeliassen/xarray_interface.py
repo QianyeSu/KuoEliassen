@@ -14,8 +14,8 @@ def solve_ke_xarray(
     temperature: xr.DataArray,
     vt_eddy: xr.DataArray,
     vu_eddy: xr.DataArray,
-    pressure_dim: str = 'plev',
-    latitude_dim: str = 'lat',
+    pressure_dim: Optional[str] = None,
+    latitude_dim: Optional[str] = None,
     heating: Optional[xr.DataArray] = None,
     rad_heating: Optional[xr.DataArray] = None,
     latent_heating: Optional[xr.DataArray] = None,
@@ -34,10 +34,10 @@ def solve_ke_xarray(
         Eddy heat flux v'T' [K·m/s]
     vu_eddy : xr.DataArray
         Eddy momentum flux u'v' [m²/s²]
-    pressure_dim : str, default='plev'
-        Name of pressure dimension
-    latitude_dim : str, default='lat'
-        Name of latitude dimension
+    pressure_dim : str, optional
+        Name of pressure dimension (auto-detected if None)
+    latitude_dim : str, optional
+        Name of latitude dimension (auto-detected if None)
     heating : xr.DataArray, optional
         Total diabatic heating rate [K/s] (use this OR rad_heating+latent_heating)
     rad_heating : xr.DataArray, optional
@@ -71,6 +71,10 @@ def solve_ke_xarray(
     - Mode 1: Only `heating` provided → single total heating (PSI_latent/PSI_rad are zeros)
     - Mode 2: Both `rad_heating` and `latent_heating` → decomposed heating components
 
+    Dimension names:
+    - Pressure dimension: auto-detected from ['pressure', 'plev', 'lev', 'level', 'pfull']
+    - Latitude dimension: auto-detected from ['latitude', 'lat', 'y']
+
     Examples
     --------
     # Mode 1: Single heating
@@ -82,6 +86,25 @@ def solve_ke_xarray(
     # With QGPV diagnostics
     result = solve_ke_xarray(v, T, vt, vu, heating=Q, qgpv=True)
     """
+    # Auto-detect dimension names if not provided
+    if pressure_dim is None:
+        pressure_candidates = ['pressure', 'plev', 'lev', 'level', 'pfull']
+        for candidate in pressure_candidates:
+            if candidate in temperature.dims:
+                pressure_dim = candidate
+                break
+        if pressure_dim is None:
+            raise ValueError(f"Could not auto-detect pressure dimension. Available dims: {temperature.dims}")
+    
+    if latitude_dim is None:
+        latitude_candidates = ['latitude', 'lat', 'y']
+        for candidate in latitude_candidates:
+            if candidate in temperature.dims:
+                latitude_dim = candidate
+                break
+        if latitude_dim is None:
+            raise ValueError(f"Could not auto-detect latitude dimension. Available dims: {temperature.dims}")
+    
     # Normalize and sort coordinates
     pressure_pa = normalize_pressure(temperature[pressure_dim].values)
     latitude_deg = normalize_latitude(temperature[latitude_dim].values)
@@ -152,8 +175,8 @@ def solve_ke_LHS_xarray(
     temp_base: xr.DataArray,
     psi_current: xr.DataArray,
     temp_current: xr.DataArray,
-    pressure_dim: str = 'plev',
-    latitude_dim: str = 'lat'
+    pressure_dim: Optional[str] = None,
+    latitude_dim: Optional[str] = None
 ) -> xr.Dataset:
     """
     Decompose streamfunction anomaly into stability and residual components (xarray interface).
@@ -168,10 +191,10 @@ def solve_ke_LHS_xarray(
         Current period streamfunction [kg/s]
     temp_current : xr.DataArray
         Current period temperature [K]
-    pressure_dim : str, default='plev'
-        Name of pressure dimension
-    latitude_dim : str, default='lat'
-        Name of latitude dimension
+    pressure_dim : str, optional
+        Name of pressure dimension (auto-detected if None)
+    latitude_dim : str, optional
+        Name of latitude dimension (auto-detected if None)
 
     Returns
     -------
@@ -197,6 +220,25 @@ def solve_ke_LHS_xarray(
     decomp = solve_ke_LHS_xarray(psi_base, T_mean, psi_curr, T_curr)
     psi_forcing = psi_curr - psi_base - decomp['PSI_stability'] - decomp['PSI_residual']
     """
+    # Auto-detect dimension names if not provided
+    if pressure_dim is None:
+        pressure_candidates = ['pressure', 'plev', 'lev', 'level', 'pfull']
+        for candidate in pressure_candidates:
+            if candidate in temp_base.dims:
+                pressure_dim = candidate
+                break
+        if pressure_dim is None:
+            raise ValueError(f"Could not auto-detect pressure dimension. Available dims: {temp_base.dims}")
+    
+    if latitude_dim is None:
+        latitude_candidates = ['latitude', 'lat', 'y']
+        for candidate in latitude_candidates:
+            if candidate in temp_base.dims:
+                latitude_dim = candidate
+                break
+        if latitude_dim is None:
+            raise ValueError(f"Could not auto-detect latitude dimension. Available dims: {temp_base.dims}")
+    
     # Normalize and sort coordinates
     pressure_pa = normalize_pressure(temp_base[pressure_dim].values)
     latitude_deg = normalize_latitude(temp_base[latitude_dim].values)

@@ -64,15 +64,18 @@ class TestSolveKEXarrayBasic:
         )
 
         # Check all expected variables present
+        assert 'PSI' in result
+        assert 'D' in result
         assert 'PSI_Q' in result
         assert 'PSI_latent' in result
         assert 'PSI_rad' in result
-        assert 'D_latent' in result
-        assert 'D_rad' in result
-        assert 'D_vt' in result
-        assert 'D_vu' in result
-        assert 'D_x' in result
-        assert 'F_friction' in result
+        assert 'PSI_vt' in result
+        assert 'PSI_vu' in result
+        assert 'PSI_x' in result
+        # QGPV diagnostics
+        assert 'momentum_term' in result
+        assert 'thermal_term' in result
+        assert 'residual' in result
 
     def test_xarray_preserves_coordinates(self, xarray_dataset):
         """Test that coordinates are preserved."""

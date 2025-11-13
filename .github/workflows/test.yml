@@ -32,11 +32,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gfortran gcc g++ ninja-build libomp-dev
-          
+
           # Pre-install build backend to avoid pip isolation issues
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install "meson-python>=0.15.0" meson ninja numpy
-          
+
           echo "=== Compiler versions ==="
           gfortran --version
           gcc --version
@@ -47,42 +47,42 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           set -euo pipefail
-          
+
           echo "Updating Homebrew..."
           brew update
-          
+
           echo "Installing gcc, ninja, libomp..."
           brew install gcc ninja libomp
-          
+
           # Pre-install build backend to avoid pip isolation issues
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install "meson-python>=0.15.0" meson ninja numpy
-          
+
           BREW_BIN="$(brew --prefix)/bin"
-          
+
           # Find brewed gcc/gfortran (handles version suffixes like gcc-13, gfortran-13)
           GCC="$(ls "$BREW_BIN"/gcc-* 2>/dev/null | head -n1 || true)"
           GFORTRAN="$(ls "$BREW_BIN"/*gfortran* 2>/dev/null | grep -v '\.py' | head -n1 || true)"
           GXX="${GCC/gcc/g++}"
-          
+
           if [ -z "$GCC" ] || [ -z "$GFORTRAN" ]; then
             echo "ERROR: Cannot find brewed gcc/gfortran under $BREW_BIN"
             echo "Available compilers:"
             ls -l "$BREW_BIN" | grep -E "(gcc|gfortran|g++)" || true
             exit 1
           fi
-          
+
           # Export compiler paths for subsequent steps
           echo "PATH=$BREW_BIN:$PATH" >> $GITHUB_ENV
           echo "CC=$GCC" >> $GITHUB_ENV
           echo "CXX=$GXX" >> $GITHUB_ENV
           echo "FC=$GFORTRAN" >> $GITHUB_ENV
-          
+
           # Set OpenMP library paths for libomp
           BREW_PREFIX=$(brew --prefix)
           echo "LDFLAGS=-L$BREW_PREFIX/opt/libomp/lib" >> $GITHUB_ENV
           echo "CPPFLAGS=-I$BREW_PREFIX/opt/libomp/include" >> $GITHUB_ENV
-          
+
           # Verify installations
           echo "=== Compiler versions ==="
           "$GCC" --version || true
@@ -98,7 +98,7 @@ jobs:
           choco install -y msys2
           C:\tools\msys64\usr\bin\bash -lc "pacman -Sy --noconfirm mingw-w64-x86_64-gcc-fortran"
           echo "C:\tools\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          
+
           # Pre-install build backend
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install "meson-python>=0.15.0" meson ninja numpy

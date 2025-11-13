@@ -21,352 +21,82 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Setup Conda with gcc-gfortran
+        uses: conda-incubator/setup-miniconda@v3
         with:
+          auto-activate-base: true
           python-version: ${{ matrix.python-version }}
+          channels: conda-forge
+          channel-priority: true
 
-      # Linux setup
-      - name: Install build dependencies (Linux)
-        if: runner.os == 'Linux'
+      - name: Install build dependencies via conda
+        shell: bash -l {0}
         run: |
-          sudo apt-get update
-
-          # Add GCC 13+ repository for latest compiler versions
-          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-          sudo apt-get update
-
-          # Install latest GCC/gfortran versions (13+)
-          sudo apt-get install -y build-essential
-          sudo apt-get install -y gcc-13 gfortran-13 g++-13
-          sudo apt-get install -y gcc-14 gfortran-14 g++-14 || echo "GCC-14 not available, using GCC-13"
-
-          # Install OpenMP and math libraries
-          sudo apt-get install -y libomp-dev libopenblas-dev libblas-dev liblapack-dev
-          # Install build tools
-          sudo apt-get install -y meson ninja-build pkg-config cmake
-
-          # Set up compiler alternatives - prioritize GCC 13+
-          if [ -x "/usr/bin/gcc-14" ]; then
-            echo "Setting up GCC-14 as primary compiler"
-            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 140 --slave /usr/bin/g++ g++ /usr/bin/g++-14
-            sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-14 140
-            sudo update-alternatives --set gcc /usr/bin/gcc-14
-            sudo update-alternatives --set gfortran /usr/bin/gfortran-14
-          else
-            echo "Setting up GCC-13 as primary compiler"
-            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 130 --slave /usr/bin/g++ g++ /usr/bin/g++-13
-            sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-13 130
-            sudo update-alternatives --set gcc /usr/bin/gcc-13
-            sudo update-alternatives --set gfortran /usr/bin/gfortran-13
-          fi
-
-          # Pre-install build backend to avoid pip isolation issues
+          conda install -y -c conda-forge gcc gfortran gxx cmake ninja meson make
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install "meson-python>=0.15.0" meson ninja numpy
-
-          echo "=== Compiler versions ==="
-          gfortran --version
-          gcc --version
-          meson --version
-
-      # macOS setup - Install GNU toolchain with OpenMP support
-      - name: Install GNU toolchain and build tools (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          set -euo pipefail
-
-          echo "Updating Homebrew..."
-          brew update
-
-          echo "Installing gcc, ninja, libomp..."
-          brew install gcc ninja libomp
-
-          # Pre-install build backend to avoid pip isolation issues
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install "meson-python>=0.15.0" meson ninja numpy
-
-          BREW_BIN="$(brew --prefix)/bin"
-
-          # Find brewed gcc/gfortran (handles version suffixes like gcc-13, gfortran-13)
-          GCC="$(ls "$BREW_BIN"/gcc-* 2>/dev/null | head -n1 || true)"
-          GFORTRAN="$(ls "$BREW_BIN"/*gfortran* 2>/dev/null | grep -v '\.py' | head -n1 || true)"
-          GXX="${GCC/gcc/g++}"
-
-          if [ -z "$GCC" ] || [ -z "$GFORTRAN" ]; then
-            echo "ERROR: Cannot find brewed gcc/gfortran under $BREW_BIN"
-            echo "Available compilers:"
-            ls -l "$BREW_BIN" | grep -E "(gcc|gfortran|g++)" || true
-            exit 1
-          fi
-
-          # Export compiler paths for subsequent steps
-          echo "PATH=$BREW_BIN:$PATH" >> $GITHUB_ENV
-          echo "CC=$GCC" >> $GITHUB_ENV
-          echo "CXX=$GXX" >> $GITHUB_ENV
-          echo "FC=$GFORTRAN" >> $GITHUB_ENV
-
-          # Set OpenMP library paths for libomp
-          BREW_PREFIX=$(brew --prefix)
-          echo "LDFLAGS=-L$BREW_PREFIX/opt/libomp/lib" >> $GITHUB_ENV
-          echo "CPPFLAGS=-I$BREW_PREFIX/opt/libomp/include" >> $GITHUB_ENV
-
-          # Verify installations
-          echo "=== Compiler versions ==="
-          "$GCC" --version || true
-          "$GFORTRAN" --version || true
-          meson --version || true
-          echo "meson-python location:"
-          python -m pip show meson-python | grep Location
-
-      # Windows setup
-      - name: Install Windows build dependencies
-        if: runner.os == 'Windows'
-        run: |
-          choco install -y msys2
-          C:\tools\msys64\usr\bin\bash -lc "pacman -Sy --noconfirm mingw-w64-x86_64-gcc-fortran"
-
-          # Add mingw64/bin to PATH for both build and runtime DLL discovery
-          echo "C:\tools\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-          # Also add to current session PATH immediately
-          $env:PATH = "C:\tools\msys64\mingw64\bin;$env:PATH"
-
-          # Verify gfortran is accessible
-          gfortran --version
-
-          # Pre-install build backend
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install "meson-python>=0.15.0" meson ninja numpy
-
-      - name: Set Windows compiler environment
-        if: runner.os == 'Windows'
-        run: |
-          echo "CC=gcc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "FC=gfortran" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "CXX=g++" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          # Verify PATH includes mingw64/bin
-          echo "Current PATH:"
-          echo $env:PATH
-          echo ""
-          echo "Checking gfortran accessibility:"
-          gfortran --version
-
-      - name: Install Python build backend and build tools (pre-install before isolation build)
-        run: |
-          # Only needed if not already installed by platform-specific steps
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install "meson-python>=0.15.0" meson ninja numpy
+          python -m pip install "meson-python>=0.15.0" numpy scipy xarray pytest pytest-cov coverage[toml]
+          if [ "$RUNNER_OS" = "Windows" ]; then pip install delvewheel; fi
 
       - name: Verify compiler environment
+        shell: bash -l {0}
         run: |
-          echo "=== Compiler Environment Verification ==="
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            gcc --version | head -1
-            gfortran --version | head -1
-            
-            # Check gfortran version is 13+
-            GFORTRAN_VERSION=$(gfortran --version | head -1 | grep -oE '[0-9]+\.[0-9]+' | head -1 | cut -d. -f1)
-            echo "gfortran major version: $GFORTRAN_VERSION"
-            if [ "$GFORTRAN_VERSION" -ge 13 ]; then
-              echo "[OK] gfortran $GFORTRAN_VERSION.x meets requirement (13+)"
-            else
-              echo "[WARN] gfortran $GFORTRAN_VERSION.x is below requirement (13+)"
-            fi
-          elif [ "$RUNNER_OS" = "macOS" ]; then
-            $CC --version | head -1
-            $FC --version | head -1
-          elif [ "$RUNNER_OS" = "Windows" ]; then
-            gcc --version | head -1
-            gfortran --version | head -1
-          fi
-          
-          echo "=== Setting up build environment ==="
-          if [ "$RUNNER_OS" = "Linux" ] || [ "$RUNNER_OS" = "Windows" ]; then
-            export CC=gcc
-            export FC=gfortran
-            export F77=gfortran
-            export F90=gfortran
-            export CXX=g++
-          fi
+          gcc --version | head -1
+          gfortran --version | head -1
+          g++ --version | head -1
+          export CC=gcc
+          export FC=gfortran
+          export CXX=g++
           echo "Compilers: CC=$CC, FC=$FC, CXX=$CXX"
-          
-          echo "=== Testing f2py with current gfortran ==="
-          echo 'subroutine test_compile()
-          print *, "gfortran compilation test"
-          end subroutine' > test.f90
-          
-          if python -m numpy.f2py -c test.f90 -m test_mod --fcompiler=gnu95 2>/dev/null; then
-            echo "[OK] f2py works with gfortran"
-          else
-            echo "[WARN] f2py test failed - this is common on Windows with Python 3.12+"
-            echo "[INFO] Build process will still work with meson"
-          fi
-          rm -f test.f90 test_mod*.so test_mod*.pyd *.mod
-        shell: bash
-
-      - name: Install Python dependencies
-        run: |
-          pip install scipy xarray pytest pytest-cov coverage[toml]
-          # Windows: add delvewheel for DLL dependency repair
-          if [ "$RUNNER_OS" = "Windows" ]; then pip install delvewheel; fi
-        shell: bash
-
-      - name: Ensure mingw64 in PATH before build (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          # Re-add to current session PATH to ensure it's available for build
-          $env:PATH = "C:\tools\msys64\mingw64\bin;$env:PATH"
-          echo "PATH updated for build step"
-          where.exe gfortran
+          meson --version
 
       - name: Build and install package
+        shell: bash -l {0}
         run: |
-          echo "=== Building package ==="
-          if pip install -e . --no-build-isolation; then
-            echo "[OK] Package installed successfully"
-          else
-            echo "[ERROR] Package installation failed"
-            echo "=== Attempting manual build with detailed output ==="
-            
-            # Set explicit compiler environment variables
-            if [ "$RUNNER_OS" = "Linux" ] || [ "$RUNNER_OS" = "Windows" ]; then
-              export FC=gfortran
-              export F77=gfortran
-              export F90=gfortran
-              export CC=gcc
-              export CXX=g++
-            fi
-            export FFLAGS="-O3 -fPIC -fopenmp -fno-second-underscore -std=legacy"
-            export CFLAGS="-O3 -fPIC -fopenmp"
-            export LDFLAGS="-fopenmp"
-            export NPY_NUM_BUILD_JOBS=2
-            
-            echo "Environment: FC=$FC, CC=$CC"
-            echo "FFLAGS=$FFLAGS"
-            
-            # Clean build artifacts
-            rm -rf build/ dist/ *.egg-info/
-            find . -name "*.so" -delete 2>/dev/null || true
-            find . -name "*.pyd" -delete 2>/dev/null || true
-            
-            # Retry with verbose output
-            python -m pip install -e . --no-build-isolation -v || exit 1
-          fi
-          
-          echo "=== Checking compiled modules ==="
-          find src/ -name "*.so" -o -name "*.pyd" | head -10 || echo "No compiled extensions found"
-        shell: bash
+          export CC=gcc
+          export FC=gfortran
+          export F77=gfortran
+          export F90=gfortran
+          export CXX=g++
+          export FFLAGS="-O3 -fPIC -fopenmp -fno-second-underscore -std=legacy"
+          export CFLAGS="-O3 -fPIC -fopenmp"
+          export LDFLAGS="-fopenmp"
+          pip install -e . --no-build-isolation -v
 
-      - name: Repair Windows DLL dependencies with delvewheel
-        if: runner.os == 'Windows'
-        shell: powershell
+      - name: Verify installation
+        shell: bash -l {0}
         run: |
-          echo "=== Finding and repairing kuoeliassen_module .pyd files ==="
-          $sitepackages = python -c "import site; print(site.getsitepackages()[0])"
-          Write-Host "Site packages: $sitepackages"
-
-          # Find all kuoeliassen_module*.pyd files
-          $pyd_files = Get-ChildItem -Recurse -Filter "*kuoeliassen_module*.pyd" -Path $sitepackages -ErrorAction SilentlyContinue
-
-          if ($pyd_files) {
-            Write-Host "Found $($pyd_files.Count) .pyd file(s)"
-            foreach ($pyd in $pyd_files) {
-              Write-Host "Processing: $($pyd.FullName)"
-              # Show dependencies first
-              Write-Host "--- Dependencies before repair ---"
-              delvewheel show $pyd.FullName 2>&1 | head -20
-              
-              # Repair (move DLLs into .pyd)
-              Write-Host "--- Running delvewheel repair ---"
-              delvewheel repair $pyd.FullName -w $pyd.DirectoryName
-              Write-Host "Repaired: $($pyd.FullName)"
-            }
-          } else {
-            Write-Host "Warning: No kuoeliassen_module*.pyd files found"
-            Write-Host "Checking what .pyd files exist:"
-            Get-ChildItem -Recurse -Filter "*.pyd" -Path $sitepackages -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
-          }
-        continue-on-error: true
-
-      - name: Verify installation and DLL dependencies (Windows)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: |
-          echo "=== Checking if Fortran module can be imported ==="
-          python -c "import sys; print('Python executable:', sys.executable)"
-
-          $sitepackages = python -c "import site; print(site.getsitepackages()[0])"
-          echo "Site packages: $sitepackages"
-
-          echo ""
-          echo "=== Verifying mingw64 DLLs are accessible in PATH ==="
-          where.exe libgfortran-5.dll
-          where.exe libquadmath-0.dll
-          where.exe libgcc_s_seh-1.dll
-
-          echo ""
-          echo "=== Attempting to import kuoeliassen module ==="
-          $import_result = python -c "from kuoeliassen import solve_ke; print('[OK] Import successful')" 2>&1
-          if ($LASTEXITCODE -ne 0) {
-            echo "[FAILED] Import failed with exit code $LASTEXITCODE"
-            echo "Error output: $import_result"
-            
-            # Fallback: Copy DLLs to site-packages directly
-            echo ""
-            echo "=== Attempting fallback: copying DLLs to site-packages ==="
-            $dll_source = "C:\tools\msys64\mingw64\bin"
-            @("libgfortran-5.dll", "libquadmath-0.dll", "libgcc_s_seh-1.dll", "libgomp-1.dll", "libwinpthread-1.dll") | ForEach-Object {
-              $src = "$dll_source\$_"
-              $dst = "$sitepackages\$_"
-              if (Test-Path $src) {
-                Copy-Item $src $dst -Force
-                echo "Copied $_ to site-packages"
-              }
-            }
-            
-            # Retry import
-            echo ""
-            echo "=== Retrying import after copying DLLs ==="
-            python -c "from kuoeliassen import solve_ke; print('[OK] Import successful after DLL copy')"
-          } else {
-            echo $import_result
-          }
-        continue-on-error: false
-
-      - name: Run tests
-        run: |
-          echo "=== Pre-test verification ==="
           python -c "import sys; print('Python:', sys.version)"
           python -c "import numpy; print('NumPy:', numpy.__version__)"
-          python -c "
-          try:
-              from kuoeliassen import solve_ke
-              print('[OK] kuoeliassen module imported successfully')
-          except Exception as e:
-              print('[ERROR] kuoeliassen import failed:', e)
-              exit(1)
-          "
-          
-          echo ""
-          echo "=== Running tests with coverage ==="
+          python -c "from kuoeliassen import solve_ke; print('[OK] Module imported')"
+
+      - name: Repair Windows DLL dependencies
+        if: runner.os == 'Windows'
+        shell: bash -l {0}
+        run: |
+          SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+          if find "$SITE_PACKAGES" -name "*kuoeliassen_module*.pyd" 2>/dev/null | grep -q .; then
+            find "$SITE_PACKAGES" -name "*kuoeliassen_module*.pyd" | while read pyd; do
+              delvewheel repair "$pyd" -w "$(dirname "$pyd")"
+            done
+          fi
+        continue-on-error: true
+
+      - name: Run tests
+        shell: bash -l {0}
+        run: |
+          python -c "from kuoeliassen import solve_ke; print('[OK] Module ready')"
           pytest tests/ -v --cov=kuoeliassen --cov-report=xml --cov-report=term-missing
-        shell: bash
-        # Allow this step to fail; we'll capture results in next step
         continue-on-error: false
 
       - name: Generate coverage report
         if: always()
+        shell: bash -l {0}
         run: |
-          echo "=== Coverage report generated ==="
           if [ -f coverage.xml ]; then
             echo "coverage.xml exists"
           else
-            echo "coverage.xml not found, attempting to generate..."
-            coverage xml --fail-under=0 || echo "Failed to generate coverage.xml manually"
+            coverage xml --fail-under=0 || echo "Failed to generate coverage.xml"
           fi
-        shell: bash
         continue-on-error: true
 
       - name: Upload coverage

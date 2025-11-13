@@ -100,6 +100,13 @@
 !     from KuoEliassen_gradient.f90
 !   - All computations follow the ETM (Eulerian-mean) framework
 !   - Follows the methodology from test_KE_Held_v2.py
+! 
+! References
+!   Held, I. M. & Zurita-Gotor, P. (2025). Misuse of Kuo–Eliassen Equation in Studies of the
+!   Climatological Mean Meridional Circulation. Journal of the Atmospheric Sciences, 82,
+!   1765–1766.
+!   This implementation follows the diagnostic approach used in Held's methodology and
+!   takes into account the cautions discussed by Held & Zurita-Gotor (2025).
 !
 ! ============================================================================
 subroutine compute_QGPV_balance_terms(temp, v_mean, F_friction, Q_diabatic, &

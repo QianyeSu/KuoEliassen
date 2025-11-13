@@ -1,0 +1,241 @@
+name: Build and publish wheels
+
+on:
+  push:
+    branches: [main, dev]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual trigger"
+        required: false
+        default: "Manual testing"
+  release:
+    types: [published]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build_wheels:
+    name: Build wheel ${{ matrix.python }}-${{ matrix.buildplat[1] }}
+    runs-on: ${{ matrix.buildplat[0] }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Multi-platform build matrix
+        buildplat:
+          - [ubuntu-22.04, manylinux_x86_64]
+          - [macos-13, macosx_x86_64] # macOS Intel
+          - [macos-14, macosx_arm64] # macOS Apple Silicon
+          - [windows-2022, win_amd64]
+        python: ["cp39", "cp310", "cp311", "cp312", "cp313"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Setup for macOS
+      - name: Setup macOS Fortran compiler
+        if: startsWith(matrix.buildplat[0], 'macos')
+        run: |
+          # Install gfortran via homebrew
+          brew install gcc
+          # Set environment variables
+          echo "FC=gfortran-13" >> "$GITHUB_ENV"
+          echo "CC=gcc-13" >> "$GITHUB_ENV"
+          echo "CXX=g++-13" >> "$GITHUB_ENV"
+          # Set macOS deployment target
+          if [ "${{ matrix.buildplat[0] }}" = "macos-14" ]; then
+            echo "MACOSX_DEPLOYMENT_TARGET=14.0" >> "$GITHUB_ENV"
+          else
+            echo "MACOSX_DEPLOYMENT_TARGET=13.0" >> "$GITHUB_ENV"
+          fi
+
+      # Setup for Windows (msys2 + mingw-w64)
+      - name: Setup Windows Fortran (msys2)
+        if: matrix.buildplat[1] == 'win_amd64'
+        run: |
+          choco install -y msys2
+          C:\tools\msys64\usr\bin\bash -lc "pacman -Sy --noconfirm mingw-w64-x86_64-gcc-fortran"
+          echo "C:\tools\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          pip install delvewheel
+
+      - name: Validate matrix combination
+        shell: bash
+        run: |
+          echo "Python: ${{ matrix.python }}"
+          echo "Build platform: ${{ matrix.buildplat[1] }}"
+          echo "CIBW_BUILD would be: ${{ matrix.python }}-${{ matrix.buildplat[1] }}"
+
+      # Build wheels for Windows
+      - name: Build wheels (Windows)
+        if: matrix.buildplat[1] == 'win_amd64'
+        uses: pypa/cibuildwheel@v3.2.1
+        with:
+          output-dir: wheelhouse
+        env:
+          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
+          CIBW_SKIP: "*-win32 *-musllinux*"
+          CIBW_BEFORE_BUILD_WINDOWS: pip install meson ninja
+          CIBW_ENVIRONMENT_WINDOWS: FC=gfortran CC=gcc
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair -w {dest_dir} {wheel}
+          CIBW_TEST_COMMAND: python -c "import kuoeliassen; from kuoeliassen import solve_ke; print('Import test passed')"
+          CIBW_BUILD_VERBOSITY: 1
+
+      # Build wheels for macOS x86_64
+      - name: Build wheels (macOS x86_64)
+        if: matrix.buildplat[1] == 'macosx_x86_64'
+        uses: pypa/cibuildwheel@v3.2.1
+        with:
+          output-dir: wheelhouse
+        env:
+          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
+          CIBW_SKIP: "*-win32 *-musllinux*"
+          CIBW_ENVIRONMENT_MACOS: FC=gfortran-13 CC=gcc-13 CXX=g++-13 MACOSX_DEPLOYMENT_TARGET=13.0
+          MACOSX_DEPLOYMENT_TARGET: "13.0"
+          CIBW_TEST_COMMAND: python -c "import kuoeliassen; from kuoeliassen import solve_ke; print('Import test passed')"
+          CIBW_BUILD_VERBOSITY: 1
+
+      # Build wheels for macOS arm64
+      - name: Build wheels (macOS arm64)
+        if: matrix.buildplat[1] == 'macosx_arm64'
+        uses: pypa/cibuildwheel@v3.2.1
+        with:
+          output-dir: wheelhouse
+        env:
+          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
+          CIBW_SKIP: "*-win32 *-musllinux*"
+          CIBW_ENVIRONMENT_MACOS: FC=gfortran-13 CC=gcc-13 CXX=g++-13 MACOSX_DEPLOYMENT_TARGET=14.0
+          MACOSX_DEPLOYMENT_TARGET: "14.0"
+          CIBW_TEST_COMMAND: python -c "import kuoeliassen; from kuoeliassen import solve_ke; print('Import test passed')"
+          CIBW_BUILD_VERBOSITY: 1
+
+      # Build wheels for Linux x86_64
+      - name: Build wheels (Linux x86_64)
+        if: matrix.buildplat[1] == 'manylinux_x86_64'
+        uses: pypa/cibuildwheel@v3.2.1
+        with:
+          output-dir: wheelhouse
+        env:
+          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
+          CIBW_SKIP: "*-win32 *-musllinux*"
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          CIBW_BEFORE_BUILD_LINUX: |
+            # Install gfortran
+            dnf install -y gcc-gfortran || yum install -y gcc-gfortran || echo 'gfortran install failed'
+          CIBW_ENVIRONMENT_LINUX: FC=gfortran CC=gcc
+          CIBW_TEST_COMMAND: python -c "import kuoeliassen; from kuoeliassen import solve_ke; print('Import test passed')"
+          CIBW_BUILD_VERBOSITY: 1
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.python }}-${{ matrix.buildplat[1] }}
+          path: ./wheelhouse/*.whl
+
+  build_sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build sdist
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --sdist
+
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  # Publish to PyPI (only on tags or release)
+  publish:
+    name: Publish to PyPI
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: [build_wheels, build_sdist]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Use trusted publishing
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*"
+          path: dist-artifacts
+          merge-multiple: true
+
+      - name: Prepare dist directory
+        run: |
+          mkdir -p dist
+          find dist-artifacts -name "*.whl" -exec cp {} dist/ \;
+          find dist-artifacts -name "*.tar.gz" -exec cp {} dist/ \;
+          ls -la dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+  # Test installation (multi-platform validation)
+  test_install:
+    name: Test installation on ${{ matrix.os }} Python ${{ matrix.python-version }}
+    needs: [build_wheels]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheel-*
+          path: wheels
+          merge-multiple: true
+
+      - name: Install and test wheel
+        shell: bash
+        run: |
+          # Find the appropriate wheel for this platform
+          wheel=$(ls wheels/*.whl | grep cp$(echo ${{ matrix.python-version }} | tr -d .) | head -1)
+          if [ -z "$wheel" ]; then
+            echo "No wheel found for Python ${{ matrix.python-version }}"
+            exit 1
+          fi
+          echo "Installing wheel: $wheel"
+          pip install "$wheel"
+
+          # Test basic import and functionality
+          python -c "
+          import kuoeliassen
+          from kuoeliassen import solve_ke
+          from kuoeliassen.xarray_interface import solve_ke_xarray
+          print('✓ KuoEliassen imported successfully')
+          print(f'  Version: {kuoeliassen.__version__}')
+          print('✓ All imports successful')
+          "

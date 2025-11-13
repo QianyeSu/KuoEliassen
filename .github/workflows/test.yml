@@ -97,7 +97,15 @@ jobs:
         run: |
           choco install -y msys2
           C:\tools\msys64\usr\bin\bash -lc "pacman -Sy --noconfirm mingw-w64-x86_64-gcc-fortran"
+          
+          # Add mingw64/bin to PATH for both build and runtime DLL discovery
           echo "C:\tools\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          
+          # Also add to current session PATH immediately
+          $env:PATH = "C:\tools\msys64\mingw64\bin;$env:PATH"
+          
+          # Verify gfortran is accessible
+          gfortran --version
 
           # Pre-install build backend
           python -m pip install --upgrade pip setuptools wheel
@@ -109,6 +117,13 @@ jobs:
           echo "CC=gcc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "FC=gfortran" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "CXX=g++" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          
+          # Verify PATH includes mingw64/bin
+          echo "Current PATH:"
+          echo $env:PATH
+          echo ""
+          echo "Checking gfortran accessibility:"
+          gfortran --version
 
       - name: Install Python build backend and build tools (pre-install before isolation build)
         run: |
@@ -123,6 +138,27 @@ jobs:
       - name: Build and install package
         run: |
           pip install -e . --no-build-isolation
+
+      - name: Verify installation and DLL dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "=== Checking if Fortran module can be imported ==="
+          python -c "import sys; print('Python executable:', sys.executable)"
+          python -c "import sys; print('sys.path:', sys.path)"
+          
+          echo ""
+          echo "=== PATH environment variable ==="
+          echo $env:PATH
+          
+          echo ""
+          echo "=== Verifying mingw64 DLLs are accessible ==="
+          where.exe libgfortran-5.dll
+          where.exe libquadmath-0.dll
+          where.exe libgcc_s_seh-1.dll
+          
+          echo ""
+          echo "=== Attempting to import kuoeliassen module ==="
+          python -c "from kuoeliassen import solve_ke; print('✓ Import successful')"
 
       - name: Run tests
         run: |

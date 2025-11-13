@@ -6,47 +6,6 @@ import numpy as np
 from typing import Tuple
 
 
-def validate_grid_data(
-    temperature: np.ndarray,
-    u_wind: np.ndarray,
-    v_wind: np.ndarray,
-    heating: np.ndarray,
-    pressure: np.ndarray,
-    latitude: np.ndarray
-) -> Tuple[int, int]:
-    """
-    Validate input data shapes and consistency.
-
-    Returns
-    -------
-    nlev : int
-        Number of vertical levels
-    nlat : int
-        Number of latitudes
-    """
-    if temperature.ndim < 2:
-        raise ValueError(
-            f"temperature must be at least 2D, got {temperature.ndim}D")
-
-    shape = temperature.shape[-2:]
-    nlev, nlat = shape
-
-    for name, arr in [('u_wind', u_wind), ('v_wind', v_wind), ('heating', heating)]:
-        if arr.shape[-2:] != shape:
-            raise ValueError(
-                f"{name} shape {arr.shape} != temperature {temperature.shape}")
-
-    if pressure.shape[-1] != nlev:
-        raise ValueError(
-            f"pressure length {pressure.shape[-1]} != nlev {nlev}")
-
-    if latitude.shape[-1] != nlat:
-        raise ValueError(
-            f"latitude length {latitude.shape[-1]} != nlat {nlat}")
-
-    return nlev, nlat
-
-
 def normalize_pressure(pressure: np.ndarray) -> np.ndarray:
     """
     Ensure pressure is in Pa and decreasing order.

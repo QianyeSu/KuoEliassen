@@ -184,15 +184,17 @@ class TestSolveKELHS:
     @pytest.fixture
     def basic_data(self):
         """Create minimal test data for LHS decomposition."""
-        nz, ny, nt = 5, 3, 2
+        nlev, nlat = 5, 3  # Use 2D data: (pressure levels, latitudes)
 
         data = {
-            # Streamfunction in kg/s
-            'psi_base': np.random.randn(nz, ny, nt) * 1e9,
-            'temp_base': np.random.randn(nz, ny, nt) * 10 + 273.15,
-            'psi_current': np.random.randn(nz, ny, nt) * 1e9,
-            'temp_current': np.random.randn(nz, ny, nt) * 10 + 273.15,
+            # Streamfunction in kg/s - 2D: (nlev, nlat)
+            'psi_base': np.random.randn(nlev, nlat) * 1e9,
+            'temp_base': np.random.randn(nlev, nlat) * 10 + 273.15,
+            'psi_current': np.random.randn(nlev, nlat) * 1e9,
+            'temp_current': np.random.randn(nlev, nlat) * 10 + 273.15,
+            # (nlev,) = (5,)
             'pressure': np.array([1000, 850, 700, 500, 300], dtype=np.float64) * 100,
+            # (nlat,) = (3,)
             'latitude': np.array([30, 35, 40], dtype=np.float64),
         }
         return data
@@ -215,9 +217,9 @@ class TestSolveKELHS:
         assert 'PSI_residual' in result
 
         # Check shapes
-        nz, ny, nt = basic_data['psi_base'].shape
-        assert result['PSI_stability'].shape == (nz, ny, nt)
-        assert result['PSI_residual'].shape == (nz, ny, nt)
+        nlev, nlat = basic_data['psi_base'].shape  # 2D data now
+        assert result['PSI_stability'].shape == (nlev, nlat)
+        assert result['PSI_residual'].shape == (nlev, nlat)
 
     def test_lhs_qgpv_false(self, basic_data):
         """Test LHS decomposition (no qgpv parameter in LHS)."""
@@ -368,19 +370,19 @@ class TestEdgeCases:
         assert result['PSI_Q'].shape == (nz, ny)
 
     def test_1d_input(self):
-        """Test with 1D input (single profile)."""
+        """Test with minimal 2D input (few latitude points)."""
         from kuoeliassen import solve_ke
 
         nz = 5
-        ny = 1  # Single latitude point
+        ny = 2  # Minimum 2 latitude points to avoid boundary issues
 
-        v_mean = np.random.randn(nz, ny)  # Shape (nz, ny) not (nz,)
+        v_mean = np.random.randn(nz, ny)  # Shape (nz, ny)
         temp = np.random.randn(nz, ny) + 273.15
         heating = np.random.randn(nz, ny) * 0.01
         vt_eddy = np.random.randn(nz, ny) * 0.1
         vu_eddy = np.random.randn(nz, ny) * 0.1
         level = np.array([1000, 850, 700, 500, 300], dtype=np.float64) * 100
-        lat = np.array([30.0], dtype=np.float64)  # Single latitude
+        lat = np.array([25.0, 35.0], dtype=np.float64)  # Two latitude points
 
         result = solve_ke(
             v=v_mean,

@@ -1,0 +1,88 @@
+!    -*- f90 -*-
+! f2py interface file for KuoEliassen Fortran routines
+! No modules - global subroutines only
+
+python module KuoEliassen_module
+    interface
+        
+        subroutine vertical_gradient(field,p,nlev,grad)
+            integer, optional,intent(in),check(len(field)>=nlev),depend(field) :: nlev=len(field)
+            real(kind=8) dimension(nlev),intent(in) :: field
+            real(kind=8) dimension(nlev),intent(in),depend(nlev) :: p
+            real(kind=8) dimension(nlev),intent(out),depend(nlev) :: grad
+        end subroutine vertical_gradient
+        
+        subroutine meridional_gradient_coeff(phi,nlat,dphi_array)
+            integer, optional,intent(in),check(len(phi)>=nlat),depend(phi) :: nlat=len(phi)
+            real(kind=8) dimension(nlat),intent(in) :: phi
+            real(kind=8) dimension(nlat),intent(out),depend(nlat) :: dphi_array
+        end subroutine meridional_gradient_coeff
+        
+        subroutine meridional_gradient_2d(field,phi,radius,nlev,nlat,grad)
+            integer, optional,intent(in),check(shape(field,0)==nlev),depend(field) :: nlev=shape(field,0)
+            integer, optional,intent(in),check(shape(field,1)==nlat),depend(field) :: nlat=shape(field,1)
+            real(kind=8) dimension(nlev,nlat),intent(in) :: field
+            real(kind=8) dimension(nlat),intent(in),depend(nlat) :: phi
+            real(kind=8) intent(in) :: radius
+            real(kind=8) dimension(nlev,nlat),intent(out),depend(nlev,nlat) :: grad
+        end subroutine meridional_gradient_2d
+        
+        subroutine vertical_gradient_2d(field,p,nlev,nlat,grad)
+            integer, optional,intent(in),check(shape(field,0)==nlev),depend(field) :: nlev=shape(field,0)
+            integer, optional,intent(in),check(shape(field,1)==nlat),depend(field) :: nlat=shape(field,1)
+            real(kind=8) dimension(nlev,nlat),intent(in) :: field
+            real(kind=8) dimension(nlev),intent(in),depend(nlev) :: p
+            real(kind=8) dimension(nlev,nlat),intent(out),depend(nlev,nlat) :: grad
+        end subroutine vertical_gradient_2d
+        
+        subroutine compute_rhs_components(v_mean,temp,latent_heating,rad_heating,vt_eddy,vu_eddy,p,phi,nlev,nlat,keep_poles,d_dtcond,d_rad,d_vt,d_vu,d_x,f_friction)
+            integer, optional,intent(in),check(shape(v_mean,0)==nlev),depend(v_mean) :: nlev=shape(v_mean,0)
+            integer, optional,intent(in),check(shape(v_mean,1)==nlat),depend(v_mean) :: nlat=shape(v_mean,1)
+            real(kind=8) dimension(nlev,nlat),intent(in) :: v_mean
+            real(kind=8) dimension(nlev,nlat),intent(in),depend(nlev,nlat) :: temp
+            real(kind=8) dimension(nlev,nlat),intent(in),depend(nlev,nlat) :: latent_heating
+            real(kind=8) dimension(nlev,nlat),intent(in),depend(nlev,nlat) :: rad_heating
+            real(kind=8) dimension(nlev,nlat),intent(in),depend(nlev,nlat) :: vt_eddy
+            real(kind=8) dimension(nlev,nlat),intent(in),depend(nlev,nlat) :: vu_eddy
+            real(kind=8) dimension(nlev),intent(in),depend(nlev) :: p
+            real(kind=8) dimension(nlat),intent(in),depend(nlat) :: phi
+            integer intent(in) :: keep_poles
+            real(kind=8) dimension(nlev,nlat),intent(out),depend(nlev,nlat) :: d_dtcond
+            real(kind=8) dimension(nlev,nlat),intent(out),depend(nlev,nlat) :: d_rad
+            real(kind=8) dimension(nlev,nlat),intent(out),depend(nlev,nlat) :: d_vt
+            real(kind=8) dimension(nlev,nlat),intent(out),depend(nlev,nlat) :: d_vu
+            real(kind=8) dimension(nlev,nlat),intent(out),depend(nlev,nlat) :: d_x
+            real(kind=8) dimension(nlev,nlat),intent(out),depend(nlev,nlat) :: f_friction
+        end subroutine compute_rhs_components
+        
+        subroutine build_ke_operator_coo(temp,p,phi,nlev,nlat,keep_poles,row_idx,col_idx,values,nnz,max_nnz)
+            integer, optional,intent(in),check(shape(temp,0)==nlev),depend(temp) :: nlev=shape(temp,0)
+            integer, optional,intent(in),check(shape(temp,1)==nlat),depend(temp) :: nlat=shape(temp,1)
+            real(kind=8) dimension(nlev,nlat),intent(in) :: temp
+            real(kind=8) dimension(nlev),intent(in),depend(nlev) :: p
+            real(kind=8) dimension(nlat),intent(in),depend(nlat) :: phi
+            integer intent(in) :: keep_poles
+            integer intent(in) :: max_nnz
+            integer dimension(max_nnz),intent(out),depend(max_nnz) :: row_idx
+            integer dimension(max_nnz),intent(out),depend(max_nnz) :: col_idx
+            real(kind=8) dimension(max_nnz),intent(out),depend(max_nnz) :: values
+            integer intent(out) :: nnz
+        end subroutine build_ke_operator_coo
+        
+        subroutine compute_QGPV_balance_terms(temp,v_mean,f_friction,q_diabatic,vt_eddy,vu_eddy,p,phi,nlev,nlat,momentum_term,thermal_term)
+            integer, optional,intent(in),check(shape(temp,0)==nlev),depend(temp) :: nlev=shape(temp,0)
+            integer, optional,intent(in),check(shape(temp,1)==nlat),depend(temp) :: nlat=shape(temp,1)
+            real(kind=8) dimension(nlev,nlat),intent(in) :: temp
+            real(kind=8) dimension(nlev,nlat),intent(in),depend(nlev,nlat) :: v_mean
+            real(kind=8) dimension(nlev,nlat),intent(in),depend(nlev,nlat) :: f_friction
+            real(kind=8) dimension(nlev,nlat),intent(in),depend(nlev,nlat) :: q_diabatic
+            real(kind=8) dimension(nlev,nlat),intent(in),depend(nlev,nlat) :: vt_eddy
+            real(kind=8) dimension(nlev,nlat),intent(in),depend(nlev,nlat) :: vu_eddy
+            real(kind=8) dimension(nlev),intent(in),depend(nlev) :: p
+            real(kind=8) dimension(nlat),intent(in),depend(nlat) :: phi
+            real(kind=8) dimension(nlev,nlat),intent(out),depend(nlev,nlat) :: momentum_term
+            real(kind=8) dimension(nlev,nlat),intent(out),depend(nlev,nlat) :: thermal_term
+        end subroutine compute_QGPV_balance_terms
+        
+    end interface
+end python module KuoEliassen_module

@@ -1,0 +1,46 @@
+# Build artifacts
+builddir/
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.dylib
+*.dll
+*.o
+*.mod
+
+# Meson
+.mesonpy-*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Testing
+.pytest_cache/
+.coverage
+
+# Data
+*.nc
+*.h5
+*.hdf5
+
+# Outputs
+*.png
+*.pdf
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual env
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db

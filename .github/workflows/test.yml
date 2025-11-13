@@ -73,17 +73,21 @@ jobs:
             export CC=clang
             export CXX=clang++
             export FC=gfortran
+            # Use meson native file for macOS to handle mixed compilers
+            MESON_NATIVE_FILE=".github/workflows/macos-native.ini"
+            PIP_INSTALL_ARGS="--config-settings=setup-args=-Dnative_file=$MESON_NATIVE_FILE"
           else
             export CC=gcc
             export CXX=g++
             export FC=gfortran
+            PIP_INSTALL_ARGS=""
           fi
           export F77=gfortran
           export F90=gfortran
           export FFLAGS="-O3 -fPIC -fopenmp -fno-second-underscore -std=legacy"
           export CFLAGS="-O3 -fPIC -fopenmp"
           export LDFLAGS="-fopenmp"
-          pip install -e . --no-build-isolation -v
+          pip install -e . --no-build-isolation $PIP_INSTALL_ARGS -v
 
       - name: Verify installation
         shell: bash -l {0}

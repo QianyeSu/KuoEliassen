@@ -98,7 +98,7 @@ subroutine build_ke_operator_coo(temp, p, phi, nlev, nlat, keep_poles, &
     real(kind=8), parameter :: omega = 7.292d-5
     real(kind=8), parameter :: radius = 6.371d6
     real(kind=8), parameter :: pi = 3.141592653589793d0
-    real(kind=8), parameter :: eps_cos = 0.001745d0 ! ~89.9 degrees in radians
+    real(kind=8), parameter :: eps_cos = 1e-12
     real(kind=8), parameter :: p0 = 100000.0d0
 
     ! Local variables

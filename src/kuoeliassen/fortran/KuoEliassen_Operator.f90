@@ -100,11 +100,10 @@ subroutine build_ke_operator_coo(temp, p, phi, nlev, nlat, keep_poles, &
     real(kind=8), parameter :: pi = 3.141592653589793d0
     real(kind=8), parameter :: eps_cos = 1e-6
     real(kind=8), parameter :: p0 = 100000.0d0
-    real(kind=8), parameter :: POLAR_THRESHOLD = 89.9d0 * pi / 180.0d0  ! 89.9° in radians
 
     ! Local variables
     integer :: i, j, M, N, j_start, j_end, center
-    integer :: i_lat, i_neighbor, j_lev
+    integer :: i_lat, j_lev
     real(kind=8) :: f, cos_phi, m_dp, m_dlat, S_squared
     real(kind=8) :: rho_ij, theta_ij, dtheta_dp_ij
     real(kind=8) :: val_c, val_jp, val_jm, val_ip, val_im
@@ -186,30 +185,13 @@ subroutine build_ke_operator_coo(temp, p, phi, nlev, nlat, keep_poles, &
         f = 2.0d0 * omega * sin(phi(i_lat))
         cos_phi = cos(phi(i_lat))
         
-        ! Polar region treatment: if |latitude| > 89.9°, use cosine from neighbor
-        if (abs(phi(i_lat)) > POLAR_THRESHOLD) then
-            ! Use neighbor's cosine value to avoid singularity at poles
-            if (phi(i_lat) > 0.0d0) then
-                ! Northern polar region: use point to the south (i_lat - 1)
-                if (i_lat > 1) then
-                    i_neighbor = i_lat - 1
-                else
-                    i_neighbor = i_lat
-                end if
-            else
-                ! Southern polar region: use point to the north (i_lat + 1)
-                if (i_lat < nlat) then
-                    i_neighbor = i_lat + 1
-                else
-                    i_neighbor = i_lat
-                end if
-            end if
-            cos_phi = cos(phi(i_neighbor))
-        end if
-        
-        ! Additional safety: if cos_phi is still too small, use eps_cos
+        ! Safe cos
         if (abs(cos_phi) < eps_cos) then
-            cos_phi = sign(eps_cos, cos_phi)
+            if (cos_phi >= 0.0d0) then
+                cos_phi = eps_cos
+            else
+                cos_phi = eps_cos
+            end if
         end if
         
         ! Python's m_dp with 2*pi factor

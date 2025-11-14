@@ -59,6 +59,30 @@
 !       val_ip at (i+1,j)  [north latitude]
 !       val_im at (i-1,j)  [south latitude]
 !
+!
+! MATRIX STRUCTURE:
+!   The matrix is sparse, size (M*N) x (M*N), where M = latitude points, N = pressure levels.
+!   Indexing: row/col = j*M + i (0-based), i=lat index, j=pressure index.
+!   Each interior grid point (i,j) contributes 5 non-zero entries (5-point stencil):
+!     - Center: (i,j) -> val_c (diagonal)
+!     - North: (i+1,j) -> val_ip
+!     - South: (i-1,j) -> val_im
+!     - Above (lower pressure): (i,j+1) -> val_jp
+!     - Below (higher pressure): (i,j-1) -> val_jm
+!   Boundary points have fewer entries (3 or 4).
+!
+!   Visual example for a small 3x3 grid (M=3, N=3, simplified):
+!     Matrix layout (rows/cols 0-8, but only non-zeros shown):
+!       0--1--2
+!       |  |  |
+!       3--4--5
+!       |  |  |
+!       6--7--8
+!     Non-zero pattern (arrows indicate connections):
+!       Corner (0): connects to 1 (right), 3 (down)
+!       Edge (1): connects to 0 (left), 2 (right), 4 (down)
+!       Interior (4): connects to 1 (up), 3 (left), 5 (right), 7 (down)
+!     Actual values depend on m_dp, m_dlat, and finite differences.
 ! ============================================================================
 subroutine build_ke_operator_coo(temp, p, phi, nlev, nlat, keep_poles, &
                                  row_idx, col_idx, values, nnz, max_nnz)
@@ -74,7 +98,7 @@ subroutine build_ke_operator_coo(temp, p, phi, nlev, nlat, keep_poles, &
     real(kind=8), parameter :: omega = 7.292d-5
     real(kind=8), parameter :: radius = 6.371d6
     real(kind=8), parameter :: pi = 3.141592653589793d0
-    real(kind=8), parameter :: eps_cos = 1.0d-6
+    real(kind=8), parameter :: eps_cos = 1.0d-12
     real(kind=8), parameter :: p0 = 100000.0d0
 
     ! Local variables

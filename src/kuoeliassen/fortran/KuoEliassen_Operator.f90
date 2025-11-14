@@ -74,7 +74,7 @@ subroutine build_ke_operator_coo(temp, p, phi, nlev, nlat, keep_poles, &
     real(kind=8), parameter :: omega = 7.292d-5
     real(kind=8), parameter :: radius = 6.371d6
     real(kind=8), parameter :: pi = 3.141592653589793d0
-    real(kind=8), parameter :: eps_cos = 1.0d-6
+    ! real(kind=8), parameter :: eps_cos = 1.0d-6
     real(kind=8), parameter :: p0 = 100000.0d0
 
     ! Local variables
@@ -166,7 +166,7 @@ subroutine build_ke_operator_coo(temp, p, phi, nlev, nlat, keep_poles, &
             if (cos_phi >= 0.0d0) then
                 cos_phi = eps_cos
             else
-                cos_phi = -eps_cos
+                cos_phi = eps_cos
             end if
         end if
         

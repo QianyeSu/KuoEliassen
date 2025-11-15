@@ -1,3 +1,5 @@
+# Exclude `setup.py` from GitHub Linguist language statistics
+setup.py linguist-detectable=false
 # GitHub language detection configuration
 
 # Ensure these files are properly recognized as code

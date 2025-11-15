@@ -4,7 +4,7 @@ omit =
     */tests/*
     */build/*
     */site-packages/*
-
+    */setup.py
 [report]
 exclude_lines =
     pragma: no cover

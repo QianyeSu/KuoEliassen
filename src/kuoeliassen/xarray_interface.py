@@ -154,8 +154,8 @@ def solve_ke_LHS_xarray(
     temp_base: xr.DataArray,
     psi_current: xr.DataArray,
     temp_current: xr.DataArray,
-    pressure_dim: Optional[str] = None,
-    latitude_dim: Optional[str] = None
+    pressure_dim: str = "level",
+    latitude_dim: str = "lat"
 ) -> xr.Dataset:
     """
     Decompose streamfunction anomaly into stability and residual components (xarray interface).
@@ -170,10 +170,10 @@ def solve_ke_LHS_xarray(
         Current period streamfunction [kg/s]
     temp_current : xr.DataArray
         Current period temperature [K]
-    pressure_dim : str, optional
-        Name of pressure dimension (auto-detected if None)
-    latitude_dim : str, optional
-        Name of latitude dimension (auto-detected if None)
+    pressure_dim : str, default='level'
+        Name of pressure dimension
+    latitude_dim : str, default='lat'
+        Name of latitude dimension
 
     Returns
     -------
@@ -184,6 +184,7 @@ def solve_ke_LHS_xarray(
 
     Notes
     -----
+    Time dimension is auto-detected from available dimensions (e.g., 'time', 'month', 'year').
     The forcing component can be computed as:
         PSI_forcing = (psi_current - psi_base) - PSI_stability - PSI_residual
 
@@ -198,41 +199,34 @@ def solve_ke_LHS_xarray(
 
     decomp = solve_ke_LHS_xarray(psi_base, T_mean, psi_curr, T_curr)
     psi_forcing = psi_curr - psi_base - decomp['PSI_stability'] - decomp['PSI_residual']
-    """
-    # Auto-detect dimension names if not provided
-    if pressure_dim is None:
-        pressure_candidates = ['pressure', 'plev', 'lev', 'level', 'pfull']
-        for candidate in pressure_candidates:
-            if candidate in temp_base.dims:
-                pressure_dim = candidate
-                break
-        if pressure_dim is None:
-            raise ValueError(
-                f"Could not auto-detect pressure dimension. Available dims: {temp_base.dims}")
 
-    if latitude_dim is None:
-        latitude_candidates = ['latitude', 'lat', 'y']
-        for candidate in latitude_candidates:
-            if candidate in temp_base.dims:
-                latitude_dim = candidate
-                break
-        if latitude_dim is None:
-            raise ValueError(
-                f"Could not auto-detect latitude dimension. Available dims: {temp_base.dims}")
+    # With custom dimension names
+    decomp = solve_ke_LHS_xarray(psi_base, T_mean, psi_curr, T_curr, 
+                                 pressure_dim='plev', latitude_dim='latitude')
+    """
+    # Verify dimension compatibility between base and current
+    if temp_base.dims != temp_current.dims:
+        raise ValueError(
+            f"Dimension mismatch: temp_base dims {temp_base.dims} vs temp_current dims {temp_current.dims}")
+
+    # Auto-detect time dimension (if present)
+    time_candidates = ['time', 'month', 'year', 't', "TIME", 'Time']
+    time_dim = None
+    for candidate in time_candidates:
+        if candidate in temp_base.dims:
+            time_dim = candidate
+            break
 
     # Normalize and sort coordinates
     pressure_pa = normalize_pressure(temp_base[pressure_dim].values)
     latitude_deg = normalize_latitude(temp_base[latitude_dim].values)
 
-    # Sort arrays
-    psi_base_sorted = psi_base.sortby(
-        [pressure_dim, latitude_dim], ascending=True)
-    temp_base_sorted = temp_base.sortby(
-        [pressure_dim, latitude_dim], ascending=True)
-    psi_curr_sorted = psi_current.sortby(
-        [pressure_dim, latitude_dim], ascending=True)
-    temp_curr_sorted = temp_current.sortby(
-        [pressure_dim, latitude_dim], ascending=True)
+    # Sort arrays along pressure and latitude dimensions
+    sort_dims = [pressure_dim, latitude_dim]
+    psi_base_sorted = psi_base.sortby(sort_dims, ascending=True)
+    temp_base_sorted = temp_base.sortby(sort_dims, ascending=True)
+    psi_curr_sorted = psi_current.sortby(sort_dims, ascending=True)
+    temp_curr_sorted = temp_current.sortby(sort_dims, ascending=True)
 
     # Call core solver
     result_dict = solve_ke_LHS(
@@ -241,14 +235,14 @@ def solve_ke_LHS_xarray(
         pressure_pa, latitude_deg
     )
 
-    # Build output Dataset
-    has_time = temp_base.ndim == 3
-    dims = (['time', pressure_dim, latitude_dim]
+    # Build output Dataset with appropriate dimensions
+    has_time = time_dim is not None
+    dims = ([time_dim, pressure_dim, latitude_dim]
             if has_time else [pressure_dim, latitude_dim])
 
     coords = {pressure_dim: pressure_pa, latitude_dim: latitude_deg}
     if has_time:
-        coords['time'] = temp_base.coords['time']
+        coords[time_dim] = temp_base.coords[time_dim]
 
     # Create DataArrays
     data_vars = {}
@@ -262,4 +256,8 @@ def solve_ke_LHS_xarray(
     result_ds.attrs['solver'] = 'KuoEliassen v2.0'
 
     # Restore original coordinate order
-    return result_ds.reindex({pressure_dim: temp_base[pressure_dim], latitude_dim: temp_base[latitude_dim]})
+    reindex_dict = {
+        pressure_dim: temp_base[pressure_dim], latitude_dim: temp_base[latitude_dim]}
+    if has_time:
+        reindex_dict[time_dim] = temp_base[time_dim]
+    return result_ds.reindex(reindex_dict)

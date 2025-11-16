@@ -293,7 +293,9 @@ class TestSolveKELHSXarray:
             psi_base=xarray_data['psi_base'],
             temp_base=xarray_data['temp_base'],
             psi_current=xarray_data['psi_current'],
-            temp_current=xarray_data['temp_current']
+            temp_current=xarray_data['temp_current'],
+            pressure_dim='pressure',
+            latitude_dim='latitude'
         )
 
         assert isinstance(result, xr.Dataset)
@@ -304,7 +306,9 @@ class TestSolveKELHSXarray:
             psi_base=xarray_data['psi_base'],
             temp_base=xarray_data['temp_base'],
             psi_current=xarray_data['psi_current'],
-            temp_current=xarray_data['temp_current']
+            temp_current=xarray_data['temp_current'],
+            pressure_dim='pressure',
+            latitude_dim='latitude'
         )
 
         assert 'PSI_stability' in result
@@ -316,7 +320,9 @@ class TestSolveKELHSXarray:
             psi_base=xarray_data['psi_base'],
             temp_base=xarray_data['temp_base'],
             psi_current=xarray_data['psi_current'],
-            temp_current=xarray_data['temp_current']
+            temp_current=xarray_data['temp_current'],
+            pressure_dim='pressure',
+            latitude_dim='latitude'
         )
 
         assert 'pressure' in result.coords
@@ -329,7 +335,9 @@ class TestSolveKELHSXarray:
             psi_base=xarray_data['psi_base'],
             temp_base=xarray_data['temp_base'],
             psi_current=xarray_data['psi_current'],
-            temp_current=xarray_data['temp_current']
+            temp_current=xarray_data['temp_current'],
+            pressure_dim='pressure',
+            latitude_dim='latitude'
         )
 
         assert isinstance(result, xr.Dataset)

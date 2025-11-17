@@ -242,7 +242,7 @@ def solve_ke_LHS_xarray(
 
     coords = {pressure_dim: pressure_pa, latitude_dim: latitude_deg}
     if has_time:
-        coords[time_dim] = temp_base.coords[time_dim]
+        coords[time_dim] = psi_current.coords[time_dim]
 
     # Create DataArrays
     data_vars = {}
@@ -257,7 +257,7 @@ def solve_ke_LHS_xarray(
 
     # Restore original coordinate order
     reindex_dict = {
-        pressure_dim: temp_base[pressure_dim], latitude_dim: temp_base[latitude_dim]}
+        pressure_dim: psi_current[pressure_dim], latitude_dim: psi_current[latitude_dim]}
     if has_time:
-        reindex_dict[time_dim] = temp_base[time_dim]
+        reindex_dict[time_dim] = psi_current[time_dim]
     return result_ds.reindex(reindex_dict)

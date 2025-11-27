@@ -50,7 +50,9 @@ class TestSolveKEBasic:
     @pytest.fixture
     def basic_data(self):
         """Create minimal test data."""
-        nt, nz, ny = 2, 5, 3  # (ntime, nlev, nlat) to match core.py expectations
+        np.random.seed(42)
+        # (ntime, nlev, nlat) to match core.py expectations
+        nt, nz, ny = 2, 5, 3
 
         data = {
             'v': np.random.randn(nt, nz, ny),
@@ -184,6 +186,7 @@ class TestSolveKELHS:
     @pytest.fixture
     def basic_data(self):
         """Create minimal test data for LHS decomposition."""
+        np.random.seed(42)
         nlev, nlat = 5, 3  # Use 2D data: (pressure levels, latitudes)
 
         data = {

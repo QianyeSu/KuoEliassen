@@ -17,7 +17,9 @@ class TestSolveKEXarrayBasic:
     @pytest.fixture
     def xarray_dataset(self):
         """Create xarray Dataset with typical atmospheric data."""
-        nt, nz, ny = 3, 8, 5  # (time, pressure, latitude) order to match core.py
+        np.random.seed(42)
+        # (time, pressure, latitude) order to match core.py
+        nt, nz, ny = 3, 8, 5
 
         p = np.array([1000, 925, 850, 700, 500, 300, 200, 100]) * 100.0
         lat = np.array([20, 30, 40, 50, 60], dtype=np.float64)
@@ -131,6 +133,7 @@ class TestSolveKEXarrayCoordinates:
     @pytest.fixture
     def reversed_pressure_dataset(self):
         """Create dataset with reversed pressure coordinate."""
+        np.random.seed(42)
         nz, ny = 5, 3  # Use 2D data to avoid 3D time slicing bug
 
         # Ascending pressure (reversed from normal)
@@ -169,6 +172,7 @@ class TestSolveKEXarrayCoordinates:
 
     def test_xarray_custom_dimension_names(self):
         """Test with custom dimension names (not standard pressure/latitude)."""
+        np.random.seed(42)
         nz, ny = 5, 3  # Use 2D data to avoid 3D time slicing bug
 
         p = np.array([1000, 850, 700, 500, 300]) * 100.0
@@ -208,6 +212,7 @@ class TestSolveKEXarrayHeatingModes:
     @pytest.fixture
     def basic_xarray(self):
         """Create basic xarray data."""
+        np.random.seed(42)
         nz, ny = 5, 3
 
         p = np.array([1000, 850, 700, 500, 300]) * 100.0
@@ -270,6 +275,7 @@ class TestSolveKELHSXarray:
     @pytest.fixture
     def xarray_data(self):
         """Create xarray data for LHS tests."""
+        np.random.seed(42)
         nz, ny = 5, 3  # Use 2D data to avoid 3D time slicing bug
 
         p = np.array([1000, 850, 700, 500, 300]) * 100.0
@@ -350,6 +356,7 @@ class TestXarrayEdgeCases:
 
     def test_xarray_2d_no_time(self):
         """Test with 2D data (no time dimension)."""
+        np.random.seed(42)
         nz, ny = 5, 3
 
         p = np.array([1000, 850, 700, 500, 300]) * 100.0
@@ -382,6 +389,7 @@ class TestXarrayEdgeCases:
 
     def test_xarray_with_attributes(self):
         """Test that input attributes are preserved/added."""
+        np.random.seed(42)
         nz, ny = 5, 3
 
         p = np.array([1000, 850, 700, 500, 300]) * 100.0
@@ -436,6 +444,7 @@ class TestXarrayIntegration:
 
     def test_xarray_realistic_data(self):
         """Test with realistic atmospheric data ranges."""
+        np.random.seed(42)
         nz, ny = 10, 7  # Use 2D data to avoid 3D time slicing bug
 
         # Realistic pressure levels

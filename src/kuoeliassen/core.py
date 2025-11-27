@@ -140,6 +140,8 @@ def solve_ke(
 
     # 2D mode - validate shapes
     nlev, nlat = v.shape
+
+    # Validate common inputs
     for name, arr in [('temperature', temperature), ('vt_eddy', vt_eddy), ('vu_eddy', vu_eddy)]:
         if arr.shape != (nlev, nlat):
             raise ValueError(
@@ -158,10 +160,11 @@ def solve_ke(
     elif heating is not None:
         # Mode 2: Single total heating - split into latent (all) and rad (zero)
         if heating.shape != (nlev, nlat):
-            raise ValueError("heating shape mismatch")
-        latent_heating = heating.copy()
+            raise ValueError(
+                f"heating shape mismatch: {heating.shape} != {(nlev, nlat)}")
+        latent_heating = heating
         rad_heating = np.zeros_like(heating)
-        single_heating_mode = True  # Mark single heating mode
+        single_heating_mode = True
     else:
         raise ValueError(
             "Either 'heating' or both 'rad_heating' and 'latent_heating' required")

@@ -34,10 +34,10 @@
 !
 !   LaTeX version:
 !   f^2\,\frac{g}{2\pi a\cos\phi}\,\frac{\partial^2\psi}{\partial p^2}
-!   + S^2\,\frac{g}{2\pi a}\,\frac{\partial}{\partial\phi}
+!   + S^2\,\frac{g}{2\pi a}\,\frac{\partial}{a\partial\phi}
 !     \left[\frac{1}{a\cos\phi}\frac{\partial\psi}{\partial\phi}\right]
 !   = \frac{R}{p}\left(\frac{1}{a}\frac{\partial\overline{Q}}{\partial\phi}
-!     - \frac{\partial}{\partial\phi}
+!     - \frac{a\partial}{\partial\phi}
 !       \left[\frac{1}{a\cos\phi}\frac{\partial(\overline{v'T'}\cos\phi)}{\partial\phi}\right]
 !     \right)
 !     + f\left(\frac{1}{a\cos^2\phi}\frac{\partial^2(\overline{u'v'}\cos^2\phi)}{\partial p\,\partial\phi}

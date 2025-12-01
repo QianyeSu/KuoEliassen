@@ -24,16 +24,15 @@ $$\frac{f^2 g}{2\pi a \cos\phi} \frac{\partial^2\psi}{\partial p^2} + \frac{S^2 
 
 **Complete expanded form** (RHS fully decomposed):
 
-$$
-\begin{aligned}
-& f^2\,\frac{g}{2\pi a\cos\phi}\,\frac{\partial^2\psi}{\partial p^2}
-  + S^2\,\frac{g}{2\pi a}\,\frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial\psi}{\partial\phi}\right] \\
-&\quad= \frac{R}{p}\Bigg(\frac{1}{a}\frac{\partial\overline{Q}}{\partial\phi}
-    - \frac{1}{a}\frac{\partial}{\partial\phi}\Big[\frac{1}{a\cos\phi}\frac{\partial(\overline{v'T'}\cos\phi)}{\partial\phi}\Big]\Bigg) \\
-&\quad\quad + f\Bigg(\frac{1}{a\cos^2\phi}\frac{\partial^2(\overline{u'v'}\cos^2\phi)}{\partial p\,\partial\phi}
-    - \frac{\partial\overline{X}}{\partial p}\Bigg)
-\end{aligned}
-$$
+$$f^2\,\frac{g}{2\pi a\cos\phi}\,\frac{\partial^2\psi}{\partial p^2} + S^2\,\frac{g}{2\pi a}\,\frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial\psi}{\partial\phi}\right] = \frac{R}{p}\left(\frac{1}{a}\frac{\partial\overline{Q}}{\partial\phi} - \frac{1}{a}\frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial(\overline{v'T'}\cos\phi)}{\partial\phi}\right]\right) + f\left(\frac{1}{a\cos^2\phi}\frac{\partial^2(\overline{u'v'}\cos^2\phi)}{\partial p\,\partial\phi} - \frac{\partial\overline{X}}{\partial p}\right)$$
+
+**Operator form** (alternative notation):
+
+$$\mathcal{L}[\psi] = D$$
+
+where the elliptic operator $\mathcal{L}$ is defined as:
+
+$$\mathcal{L}[\psi] = \frac{f^2}{2\pi a \cos\phi} g\frac{\partial^2}{\partial p^2} + \frac{S^2 g}{2\pi a \cos\phi} \frac{\partial}{\partial \phi}\left[\frac{1}{a\cos\phi}\frac{\partial}{\partial \phi}\right]$$
 
 **Component breakdown** of RHS:
 
@@ -87,8 +86,8 @@ where:
 The solver produces meridional streamfunction fields that reveal Hadley and Ferrel cell circulations:
 
 <div align="center">
-  <img src="examples/kuoeliassen.png" alt="Example Kuo-Eliassen solution" width="100%"/>
-  <p><i>Meridional mass streamfunction</i></p>
+  <img src="examples/kuoeliassen.png" alt="Example Kuo-Eliassen solution" width="70%"/>
+  <p><i>Meridional mass streamfunction response to diabatic heating and eddy forcings</i></p>
 </div>
 
 ## Features

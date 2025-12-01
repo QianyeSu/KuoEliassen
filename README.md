@@ -24,7 +24,16 @@ $$\frac{f^2 g}{2\pi a \cos\phi} \frac{\partial^2\psi}{\partial p^2} + \frac{S^2 
 
 **Complete expanded form** (RHS fully decomposed):
 
-$$f^2\,\frac{g}{2\pi a\cos\phi}\,\frac{\partial^2\psi}{\partial p^2} + S^2\,\frac{g}{2\pi a}\,\frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial\psi}{\partial\phi}\right] = \frac{R}{p}\left(\frac{1}{a}\frac{\partial\overline{Q}}{\partial\phi} - \frac{1}{a}\frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial(\overline{v'T'}\cos\phi)}{\partial\phi}\right]\right) + f\left(\frac{1}{a\cos^2\phi}\frac{\partial^2(\overline{u'v'}\cos^2\phi)}{\partial p\,\partial\phi} - \frac{\partial\overline{X}}{\partial p}\right)$$
+$$
+\begin{aligned}
+& f^2 \frac{g}{2\pi a\cos\phi} \frac{\partial^2\psi}{\partial p^2}
+  + S^2 \frac{g}{2\pi a} \frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial\psi}{\partial\phi}\right] \\
+&= \frac{R}{p}\left(\frac{1}{a}\frac{\partial\overline{Q}}{\partial\phi}
+  - \frac{1}{a}\frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial(\overline{v'T'}\cos\phi)}{\partial\phi}\right]\right) \\
+&\quad + f\left(\frac{1}{a\cos^2\phi}\frac{\partial^2(\overline{u'v'}\cos^2\phi)}{\partial p\\,\partial\phi}
+  - \frac{\partial\overline{X}}{\partial p}\right)
+\end{aligned}
+$$
 
 **Operator form** (alternative notation):
 
@@ -36,7 +45,14 @@ $$\mathcal{L}[\psi] = \frac{f^2}{2\pi a \cos\phi} g\frac{\partial^2}{\partial p^
 
 **Component breakdown** of RHS:
 
-$$D = \underbrace{\frac{R}{p a}\frac{\partial\overline{Q}}{\partial\phi}}_{\text{Diabatic Heating}} - \underbrace{\frac{R}{pa}\frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial(\overline{v'T'}\cos\phi)}{\partial\phi}\right]}_{\text{Eddy Heat Flux}} + \underbrace{\frac{f}{a\cos^2\phi}\frac{\partial^2(\overline{u'v'}\cos^2\phi)}{\partial p\,\partial\phi}}_{\text{Eddy Momentum}} - \underbrace{f\frac{\partial\overline{X}}{\partial p}}_{\text{Friction}}$$
+$$
+\begin{aligned}
+D &= \underbrace{\frac{R}{p a}\frac{\partial\overline{Q}}{\partial\phi}}_{\text{Diabatic Heating}} \\
+  &\quad - \underbrace{\frac{R}{pa}\frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial(\overline{v'T'}\cos\phi)}{\partial\phi}\right]}_{\text{Eddy Heat Flux}} \\
+  &\quad + \underbrace{\frac{f}{a\cos^2\phi}\frac{\partial^2(\overline{u'v'}\cos^2\phi)}{\partial p\\,\partial\phi}}_{\text{Eddy Momentum}} \\
+  &\quad - \underbrace{f\frac{\partial\overline{X}}{\partial p}}_{\text{Friction}}
+\end{aligned}
+$$
 
 **Meridional velocity diagnostic**:
 
@@ -87,7 +103,7 @@ The solver produces meridional streamfunction fields that reveal Hadley and Ferr
 
 <div align="center">
   <img src="examples/kuoeliassen.png" alt="Example Kuo-Eliassen solution" width="70%"/>
-  <p><i>Meridional mass streamfunction response to diabatic heating and eddy forcings</i></p>
+  <p><i>Meridional mass streamfunction and Kuo-Eliassen equation solution</i></p>
 </div>
 
 ## Features

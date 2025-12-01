@@ -20,7 +20,7 @@ The Kuo-Eliassen equation governs the zonal-mean meridional mass streamfunction 
 
 The compact form of the Kuo-Eliassen equation:
 
-$$\frac{f^2 g}{2\pi a \cos\phi} \frac{\partial^2\psi}{\partial p^2} + \frac{S^2 g}{2\pi a} \frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial\psi}{\partial\phi}\right] = D$$
+$$\frac{f^2 g}{2\pi a \cos\phi} \frac{\partial^2\psi}{\partial p^2} + \frac{S^2 g}{2\pi a} \frac{\partial}{\partial\phi}\left(\frac{1}{a\cos\phi}\frac{\partial\psi}{\partial\phi}\right) = D$$
 
 **Complete expanded form** (RHS fully decomposed):
 
@@ -28,15 +28,15 @@ $$f^2 \frac{g}{2\pi a\cos\phi} \frac{\partial^2\psi}{\partial p^2} + S^2 \frac{g
 
 **Operator form** (alternative notation):
 
-$$\mathcal{L}[\psi] = D$$
+$$\mathcal{L}(\psi) = D$$
 
 where the elliptic operator $\mathcal{L}$ is defined as:
 
-$$\mathcal{L}[\psi] = \frac{f^2}{2\pi a \cos\phi} g\frac{\partial^2}{\partial p^2} + \frac{S^2 g}{2\pi a \cos\phi} \frac{\partial}{\partial \phi}\left[\frac{1}{a\cos\phi}\frac{\partial}{\partial \phi}\right]$$
+$$\mathcal{L}(\psi) = \frac{f^2}{2\pi a \cos\phi} g\frac{\partial^2}{\partial p^2} + \frac{S^2 g}{2\pi a \cos\phi} \frac{\partial}{\partial \phi}\left(\frac{1}{a\cos\phi}\frac{\partial}{\partial \phi}\right)$$
 
 **Component breakdown** of RHS:
 
-$$D = \underbrace{\frac{R}{p a}\frac{\partial\overline{Q}}{\partial\phi}}_{\text{Diabatic Heating}} - \underbrace{\frac{R}{pa}\frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial(\overline{v'T'}\cos\phi)}{\partial\phi}\right]}_{\text{Eddy Heat Flux}} + \underbrace{\frac{f}{a\cos^2\phi}\frac{\partial^2(\overline{u'v'}\cos^2\phi)}{\partial p\,\partial\phi}}_{\text{Eddy Momentum}} - \underbrace{f\frac{\partial\overline{X}}{\partial p}}_{\text{Friction}}$$
+$$D = \underbrace{\frac{R}{p a}\frac{\partial\overline{Q}}{\partial\phi}}_{\text{Diabatic Heating}} - \underbrace{\frac{R}{pa}\frac{\partial}{\partial\phi}\left(\frac{1}{a\cos\phi}\frac{\partial(\overline{v'T'}\cos\phi)}{\partial\phi}\right)}_{\text{Eddy Heat Flux}} + \underbrace{\frac{f}{a\cos^2\phi}\frac{\partial^2(\overline{u'v'}\cos^2\phi)}{\partial p \partial\phi}}_{\text{Eddy Momentum}} - \underbrace{f\frac{\partial\overline{X}}{\partial p}}_{\text{Friction}}$$
 
 **Meridional velocity diagnostic**:
 

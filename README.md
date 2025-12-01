@@ -45,14 +45,7 @@ $$\mathcal{L}[\psi] = \frac{f^2}{2\pi a \cos\phi} g\frac{\partial^2}{\partial p^
 
 **Component breakdown** of RHS:
 
-$$
-\begin{aligned}
-D &= \underbrace{\frac{R}{p a}\frac{\partial\overline{Q}}{\partial\phi}}_{\text{Diabatic Heating}} \\
-  &\quad - \underbrace{\frac{R}{pa}\frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial(\overline{v'T'}\cos\phi)}{\partial\phi}\right]}_{\text{Eddy Heat Flux}} \\
-  &\quad + \underbrace{\frac{f}{a\cos^2\phi}\frac{\partial^2(\overline{u'v'}\cos^2\phi)}{\partial p\\,\partial\phi}}_{\text{Eddy Momentum}} \\
-  &\quad - \underbrace{f\frac{\partial\overline{X}}{\partial p}}_{\text{Friction}}
-\end{aligned}
-$$
+$$D = \underbrace{\frac{R}{p a}\frac{\partial\overline{Q}}{\partial\phi}}_{\text{Diabatic Heating}} - \underbrace{\frac{R}{pa}\frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial(\overline{v'T'}\cos\phi)}{\partial\phi}\right]}_{\text{Eddy Heat Flux}} + \underbrace{\frac{f}{a\cos^2\phi}\frac{\partial^2(\overline{u'v'}\cos^2\phi)}{\partial p\,\partial\phi}}_{\text{Eddy Momentum}} - \underbrace{f\frac{\partial\overline{X}}{\partial p}}_{\text{Friction}}$$
 
 **Meridional velocity diagnostic**:
 
@@ -80,7 +73,7 @@ where:
 
 ### Static Stability
 
-The static stability parameter $S^2$ characterizes the resistance to vertical displacement and is defined as:
+The static stability parameter $S^2$ characterizes atmospheric resistance to vertical motion and is defined as:
 
 $$S^2 = -\frac{1}{\rho\theta}\frac{\partial\theta}{\partial p}$$
 

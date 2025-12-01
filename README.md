@@ -24,16 +24,7 @@ $$\frac{f^2 g}{2\pi a \cos\phi} \frac{\partial^2\psi}{\partial p^2} + \frac{S^2 
 
 **Complete expanded form** (RHS fully decomposed):
 
-$$
-\begin{aligned}
-& f^2 \frac{g}{2\pi a\cos\phi} \frac{\partial^2\psi}{\partial p^2}
-  + S^2 \frac{g}{2\pi a} \frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial\psi}{\partial\phi}\right] \\
-&= \frac{R}{p}\left(\frac{1}{a}\frac{\partial\overline{Q}}{\partial\phi}
-  - \frac{1}{a}\frac{\partial}{\partial\phi}\left[\frac{1}{a\cos\phi}\frac{\partial(\overline{v'T'}\cos\phi)}{\partial\phi}\right]\right) \\
-&\quad + f\left(\frac{1}{a\cos^2\phi}\frac{\partial^2(\overline{u'v'}\cos^2\phi)}{\partial p\\,\partial\phi}
-  - \frac{\partial\overline{X}}{\partial p}\right)
-\end{aligned}
-$$
+$$f^2 \frac{g}{2\pi a\cos\phi} \frac{\partial^2\psi}{\partial p^2} + S^2 \frac{g}{2\pi a} \frac{\partial}{\partial\phi}\left(\frac{1}{a\cos\phi}\frac{\partial\psi}{\partial\phi}\right) = \frac{R}{p}\left(\frac{1}{a}\frac{\partial\overline{Q}}{\partial\phi} - \frac{1}{a}\frac{\partial}{\partial\phi}\left(\frac{1}{a\cos\phi}\frac{\partial(\overline{v'T'}\cos\phi)}{\partial\phi}\right)\right) + f\left(\frac{1}{a\cos^2\phi}\frac{\partial^2(\overline{u'v'}\cos^2\phi)}{\partial p \partial\phi} - \frac{\partial\overline{X}}{\partial p}\right)$$
 
 **Operator form** (alternative notation):
 

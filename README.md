@@ -69,7 +69,7 @@ where:
 - **$\overline{v'T'}$** — meridional eddy heat flux [K·m/s]
 - **$\overline{u'v'}$** — eddy momentum flux [m²/s²]
 - **$\overline{X}$** — friction/dissipation function [K/s]
-- Overbar denotes zonal average; primes denotes deviations from the zonal and monthly means
+- Overbars represent zonal and monthly mean, and primes represent deviations from zonal and montly mean
 
 ### Static Stability
 

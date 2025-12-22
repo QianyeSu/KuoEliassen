@@ -98,7 +98,7 @@ The solver produces meridional streamfunction fields that reveal Hadley and Ferr
 - **Cross-Platform Support**: Pre-built wheels for Windows, macOS (Intel & Apple Silicon), and Linux
 - **Extensively Tested**: >90% code coverage with comprehensive test suite
 - **High Performance**: Optimized SOR (Successive Over-Relaxation) iterative solver with configurable convergence criteria
-- **Physical Accuracy**: Proper handling of poles, static stability, and geometric singularities
+- **Numerical Robustness**: Robust handling of geometric singularities near poles (requires grid excluding exact $\pm 90^\circ$)
 
 ## Installation
 
@@ -131,7 +131,12 @@ If you want to contribute or modify the code:
    pip install -e .
    ```
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed development instructions.
+
+
+> [!IMPORTANT]
+> **Grid Selection**: The input latitude grid **must not** include the exact poles ($\pm 90^\circ$). The Kuo-Eliassen equation contains $1/\cos\phi$ terms that are singular at the poles. Always slice your data (e.g., `lat = slice(-89.9, 89.9)`) before solving.
+>
+
 
 ## Quick Start
 
@@ -143,7 +148,8 @@ import xarray as xr
 from kuoeliassen import solve_ke
 
 # Load atmospheric data from NetCDF file
-data = xr.open_dataset("example_data.nc")
+# IMPORTANT: Exclude poles to avoid singularities
+data = xr.open_dataset("example_data.nc").sel(lat=slice(-89.9, 89.9))
 
 # Extract variables from dataset
 # Assuming dimensions are (time, pressure, latitude)

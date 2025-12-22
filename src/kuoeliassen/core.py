@@ -62,7 +62,7 @@ def solve_ke(
     vu_eddy : ndarray, shape (nlev, nlat) or (ntime, nlev, nlat)
         Eddy momentum flux u'v' [m²/s²]
     pressure : ndarray, shape (nlev,)
-        Pressure levels [Pa], must be in ascending order (surface to top)
+        Pressure levels [Pa], must be in ascending order (top to surface)
     latitude : ndarray, shape (nlat,)
         Latitude in degrees [-90, 90]
     heating : ndarray, shape (nlev, nlat) or (ntime, nlev, nlat), optional
@@ -99,6 +99,10 @@ def solve_ke(
 
     Notes
     -----
+    - **Latitude Grid**: The input latitude grid **must not** include the exact poles (±90°).
+      The equation is singular at the poles due to 1/cos(phi) terms.
+      Ensure latitude values are within (-90, 90), e.g., [-89.9, 89.9].
+    - **Pressure Grid**: Pressure levels must be in ascending order (e.g., 100 to 100000 Pa).
     Heating input modes:
     - Mode 1: Only `heating` provided → single total heating term
     - Mode 2: Both `rad_heating` and `latent_heating` provided → 

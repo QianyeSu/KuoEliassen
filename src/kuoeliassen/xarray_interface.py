@@ -67,9 +67,12 @@ def solve_ke_xarray(
 
     Notes
     -----
-    Heating input modes:
-    - Mode 1: Only `heating` provided → single total heating (PSI_latent/PSI_rad are zeros)
-    - Mode 2: Both `rad_heating` and `latent_heating` → decomposed heating components
+    - **Latitude Grid**: The input latitude grid **must not** include the exact poles (±90°).
+      The equation is singular at the poles due to 1/cos(phi) terms.
+      Use `ds.sel(lat=slice(-89.9, 89.9))` before calling this function.
+    - **Heating input modes**:
+      - Mode 1: Only `heating` provided → single total heating (PSI_latent/PSI_rad are zeros)
+      - Mode 2: Both `rad_heating` and `latent_heating` → decomposed heating components
 
     Examples
     --------

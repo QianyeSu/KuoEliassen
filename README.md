@@ -97,8 +97,9 @@ The solver produces meridional streamfunction fields that reveal Hadley and Ferr
 - **Flexible Interface**: NumPy and xarray-compatible APIs for seamless integration with scientific workflows
 - **Cross-Platform Support**: Pre-built wheels for Windows, macOS (Intel & Apple Silicon), and Linux
 - **Extensively Tested**: >90% code coverage with comprehensive test suite
-- **High Performance**: Optimized SOR (Successive Over-Relaxation) iterative solver with configurable convergence criteria
+- **High Performance**: Dual solver architecture with LU decomposition (exact) and SOR (memory-efficient iterative)
 - **Numerical Robustness**: Robust handling of geometric singularities near poles (requires grid excluding exact $\pm 90^\circ$)
+- **Solver Flexibility**: Choose between direct sparse LU solver or optimized SOR with configurable relaxation parameters
 
 ## Installation
 
@@ -137,6 +138,58 @@ If you want to contribute or modify the code:
 > **Grid Selection**: The input latitude grid **must not** include the exact poles ($\pm 90^\circ$). The Kuo-Eliassen equation contains $1/\cos\phi$ terms that are singular at the poles. Always slice your data (e.g., `lat = slice(-89.9, 89.9)`) before solving.
 >
 
+## Solver Methods
+
+KuoEliassen provides two high-performance numerical solvers:
+
+### 1. LU Decomposition (Default)
+
+- **Method**: Direct sparse matrix solver using SuperLU
+- **Pros**: Exact solution (within machine precision), guaranteed convergence
+- **Cons**: Higher memory usage for large grids
+- **Best for**: Small to medium grids (< 100×100), when precision is critical
+
+```python
+result = solve_ke(v, temperature, vt_eddy, vu_eddy, pressure, latitude,
+                  solver='lu')  # Default
+```
+
+### 2. SOR (Successive Over-Relaxation)
+
+- **Method**: Iterative relaxation solver
+- **Pros**: Low memory footprint, excellent for large grids, tunable convergence
+- **Cons**: Requires omega parameter tuning for optimal performance
+- **Best for**: Large grids, production runs, memory-constrained environments
+
+```python
+result = solve_ke(v, temperature, vt_eddy, vu_eddy, pressure, latitude,
+                  solver='sor',
+                  omega=1.85,      # Relaxation factor (1.0-2.0, default=1.8)
+                  tol=1e-10,       # Convergence tolerance (default=1e-10)
+                  max_iter=100000) # Maximum iterations (default=100000)
+```
+
+**Omega Parameter Tuning**:
+
+The optimal relaxation factor ω depends on your grid geometry:
+- **ω = 1.0**: Gauss-Seidel (slow but stable)
+- **ω = 1.5-1.9**: Typical optimal range for atmospheric grids
+- **ω → 2.0**: Faster convergence but risk of divergence
+
+Use `examples/optimize_sor_omega.py` to find the optimal ω for your data:
+
+```bash
+cd examples
+python optimize_sor_omega.py
+```
+
+Example output:
+```
+Optimal Omega: 1.85
+Minimum iterations: 675
+Time cost: 0.0222 s
+```
+
 
 ## Quick Start
 
@@ -167,7 +220,8 @@ latitude = data['latitude'].values      # Latitude [degrees]
 result = solve_ke(
     v, temperature, vt_eddy, vu_eddy,
     pressure, latitude,
-    heating=diabatic_heating
+    heating=diabatic_heating,
+    solver='lu'  # or 'sor' for iterative solver
 )
 
 # Access results

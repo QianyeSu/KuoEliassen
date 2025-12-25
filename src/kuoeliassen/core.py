@@ -1,15 +1,110 @@
 """
 Core solver interface for KuoEliassen package
 Uses Fortran backend with COO format sparse matrices
-Only uses LU decomposition solver
+Supports LU decomposition and SOR iterative solvers
 """
 
 import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.sparse.linalg import splu
-from typing import Dict
+from typing import Dict, Optional, Callable
 
 from . import kuoeliassen_module as KuoEliassen_module
+
+
+# ============================================================================
+# Solver Dispatch System
+# ============================================================================
+
+def _solve_lu(L_csc, rhs_matrix: np.ndarray,
+              row_coo: Optional[np.ndarray] = None,
+              col_coo: Optional[np.ndarray] = None,
+              val_coo: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    """LU decomposition solver (default, fast for multiple RHS).
+
+    Parameters
+    ----------
+    L_csc : scipy.sparse.csc_matrix or None
+        Sparse matrix in CSC format (if None, will be built from COO arrays)
+    rhs_matrix : ndarray, shape (n, nrhs)
+        Right-hand side vectors
+    row_coo, col_coo, val_coo : ndarray, optional
+        COO format arrays (0-indexed). Used to build CSC if L_csc is None.
+    """
+    # Build CSC matrix from COO if not provided
+    if L_csc is None:
+        n = rhs_matrix.shape[0]
+        L_sparse = coo_matrix((val_coo, (row_coo, col_coo)), shape=(n, n))
+        L_csc = L_sparse.tocsc()
+
+    lu = splu(L_csc)
+    return np.array([lu.solve(rhs_matrix[:, i])
+                     for i in range(rhs_matrix.shape[1])]).T
+
+
+def _solve_sor(L_csc, rhs_matrix: np.ndarray,
+               omega: float = 1.8, tol: float = 1e-8,
+               max_iter: int = 50000,
+               row_coo: Optional[np.ndarray] = None,
+               col_coo: Optional[np.ndarray] = None,
+               val_coo: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    """
+    SOR (Successive Over-Relaxation) iterative solver.
+
+    Uses Fortran backend for optimized performance.
+    Directly uses COO arrays from Python (no redundant format conversion).
+
+    Parameters
+    ----------
+    L_csc : None
+        Unused (kept for signature compatibility)
+    rhs_matrix : ndarray, shape (n, nrhs)
+        Right-hand side vectors
+    omega : float
+        Relaxation factor (1.0 = Gauss-Seidel, ~1.8 conservative optimal for KE)
+    tol : float  
+        Convergence tolerance for residual norm (default: 1e-8)
+    max_iter : int
+        Maximum iterations before stopping (default: 50000)
+    row_coo, col_coo, val_coo : ndarray, required
+        COO arrays (0-indexed, will be converted to 1-indexed for Fortran)
+    """
+    n = rhs_matrix.shape[0]
+    n_rhs = rhs_matrix.shape[1]
+    nnz = len(row_coo)
+
+    # Fortran sor_solve_coo expects 0-indexed COO (like build_ke_operator_coo output)
+    # Internal coo_to_csr_local will convert to 1-indexed
+    # All arrays must match Fortran interface types: int32 for indices, float32 for values
+    row_coo_f = np.asfortranarray(row_coo, dtype=np.int32)
+    col_coo_f = np.asfortranarray(col_coo, dtype=np.int32)
+    val_coo_f = np.asfortranarray(val_coo, dtype=np.float32)
+
+    # Prepare RHS (Fortran-contiguous, float32 for Fortran interface)
+    rhs_f = np.asfortranarray(rhs_matrix, dtype=np.float32)
+
+    # Call Fortran SOR solver with pre-built matrix (1-indexed COO)
+    # Use keyword arguments to avoid parameter order confusion
+    solutions, iterations, residuals, status = KuoEliassen_module.sor_solve_coo(
+        row_coo=row_coo_f, col_coo=col_coo_f, val_coo=val_coo_f,
+        rhs=rhs_f, n=n, nnz=nnz, nrhs=n_rhs,
+        omega=omega, tol=tol, max_iter=max_iter
+    )
+
+    # Print convergence information for each RHS
+    for i in range(n_rhs):
+        converged = "converged" if status[i] == 0 else "not converged"
+        print(
+            f"SOR solver RHS#{i+1}: {converged} | iterations={iterations[i]:5d} | residual={residuals[i]:.3e}")
+
+    return solutions
+
+
+# Solver registry: maps method name to solver function
+_SOLVERS: Dict[str, Callable] = {
+    'lu': _solve_lu,
+    'sor': _solve_sor,
+}
 
 
 def _reshape_solution(psi_flat: np.ndarray, nlat: int, nlev: int) -> np.ndarray:
@@ -40,10 +135,14 @@ def solve_ke(
     vu_eddy: np.ndarray,
     pressure: np.ndarray,
     latitude: np.ndarray,
-    heating: np.ndarray = None,
-    rad_heating: np.ndarray = None,
-    latent_heating: np.ndarray = None,
-    qgpv: bool = False
+    heating: Optional[np.ndarray] = None,
+    rad_heating: Optional[np.ndarray] = None,
+    latent_heating: Optional[np.ndarray] = None,
+    qgpv: bool = False,
+    solver: str = 'lu',
+    omega: float = 1.8,
+    tol: float = 1e-8,
+    max_iter: int = 50000
 ) -> Dict[str, np.ndarray]:
     """
     Solve the Kuo-Eliassen equation for meridional circulation.
@@ -74,6 +173,15 @@ def solve_ke(
     qgpv : bool, optional
         If True, compute and return QGPV balance diagnostic terms (default: False)
         Friction forcing is automatically computed from mean wind and eddy fluxes
+    solver : str, optional
+        Solver method: 'lu' (default, direct) or 'sor' (iterative)
+    omega : float, optional
+        SOR relaxation factor (only used when solver='sor', default: 1.8)
+        Conservative setting for stability across different datasets
+    tol : float, optional
+        SOR convergence tolerance (only used when solver='sor', default: 1e-8)
+    max_iter : int, optional
+        SOR maximum iterations (only used when solver='sor', default: 50000)
 
     Returns
     -------
@@ -126,7 +234,8 @@ def solve_ke(
         results = []
         for t in range(ntime):
             # Extract 2D slice and recursively call
-            kwargs = {'qgpv': qgpv}
+            kwargs = {'qgpv': qgpv, 'solver': solver,
+                      'omega': omega, 'tol': tol, 'max_iter': max_iter}
             if rad_heating is not None and latent_heating is not None:
                 kwargs.update(
                     {'rad_heating': rad_heating[t], 'latent_heating': latent_heating[t]})
@@ -211,15 +320,12 @@ def solve_ke(
         temp_f, p_f, phi_f, keep_poles_int, max_nnz
     )
 
-    # Trim to actual nnz
+    # Trim to actual nnz (Fortran already returns 0-indexed, no conversion needed)
     row_idx = row_idx[:nnz]
     col_idx = col_idx[:nnz]
     values = values[:nnz]
 
-    # Create scipy sparse matrix (COO format, then convert to CSC for solver)
-    L_sparse = coo_matrix((values, (row_idx, col_idx)),
-                          shape=(n_total, n_total))
-    L_csc = L_sparse.tocsc()
+    # Keep values as float32 (Fortran output) - let solvers handle type conversion
 
     # Prepare RHS vectors - use all latitude points
     j_start = 0
@@ -232,10 +338,14 @@ def solve_ke(
     rhs_matrix = np.column_stack(
         [rhs[:, j_start:j_end].T.ravel('F') for rhs in rhs_list])
 
-    # Solve using LU decomposition (efficient for multiple RHS)
-    lu = splu(L_csc)
-    psi_solutions = np.array([lu.solve(rhs_matrix[:, i])
-                             for i in range(rhs_matrix.shape[1])]).T
+    # Dispatch to solver (no if-elif, uses registry)
+    # Pass 0-indexed COO arrays - each solver handles indexing as needed
+    solve_fn = _SOLVERS.get(solver, _solve_lu)
+    psi_solutions = solve_fn(
+        None, rhs_matrix,
+        omega=omega, tol=tol, max_iter=max_iter,
+        row_coo=row_idx, col_coo=col_idx, val_coo=values
+    )
 
     # Build result dictionary - single vs decomposed heating modes
     psi_q = _reshape_solution(
@@ -275,7 +385,11 @@ def solve_ke_LHS(
     psi_current: np.ndarray,
     temp_current: np.ndarray,
     pressure: np.ndarray,
-    latitude: np.ndarray
+    latitude: np.ndarray,
+    solver: str = 'lu',
+    omega: float = 1.8,
+    tol: float = 1e-8,
+    max_iter: int = 50000
 ) -> Dict[str, np.ndarray]:
     """
     Decompose streamfunction anomaly δΨ into stability and residual components.
@@ -311,6 +425,14 @@ def solve_ke_LHS(
         Pressure levels [Pa]
     latitude : ndarray, shape (nlat,)
         Latitude in degrees [-90, 90]
+    solver : str, optional
+        Solver method: 'lu' (default, direct) or 'sor' (iterative)
+    omega : float, optional
+        SOR relaxation factor (only used when solver='sor', default: 1.8)
+    tol : float, optional
+        SOR convergence tolerance (only used when solver='sor', default: 1e-8)
+    max_iter : int, optional
+        SOR maximum iterations (only used when solver='sor', default: 50000)
 
     Returns
     -------
@@ -385,7 +507,11 @@ def solve_ke_LHS(
                 psi_current[t, :, :],
                 temp_current[t, :, :],
                 pressure,
-                latitude
+                latitude,
+                solver=solver,
+                omega=omega,
+                tol=tol,
+                max_iter=max_iter
             )
             results_list.append(result_t)
 
@@ -438,29 +564,27 @@ def solve_ke_LHS(
         temp_base_f, p_f, phi_f, keep_poles_int, max_nnz
     )
 
-    # Trim to actual nnz
+    # Trim to actual nnz (Fortran already returns 0-indexed)
     row_base = row_base[:nnz_base]
     col_base = col_base[:nnz_base]
     val_base = val_base[:nnz_base]
-
-    # Create L_base sparse matrix
-    L_base_coo = coo_matrix(
-        (val_base, (row_base, col_base)), shape=(n_total, n_total))
-    L_base_csc = L_base_coo.tocsc()
 
     # Build current operator L_current (from current temperature)
     row_curr, col_curr, val_curr, nnz_curr = KuoEliassen_module.build_ke_operator_coo(
         temp_current_f, p_f, phi_f, keep_poles_int, max_nnz
     )
 
-    # Trim to actual nnz
+    # Trim to actual nnz (Fortran already returns 0-indexed)
     row_curr = row_curr[:nnz_curr]
     col_curr = col_curr[:nnz_curr]
     val_curr = val_curr[:nnz_curr]
 
-    # Create L_current sparse matrix
+    # Create sparse matrices for delta_L computation
+    L_base_coo = coo_matrix(
+        (val_base, (row_base, col_base)), shape=(n_total, n_total))
     L_current_coo = coo_matrix(
         (val_curr, (row_curr, col_curr)), shape=(n_total, n_total))
+    L_base_csc = L_base_coo.tocsc()
     L_current_csc = L_current_coo.tocsc()
 
     # Compute streamfunction anomaly
@@ -480,16 +604,23 @@ def solve_ke_LHS(
     # Term 2: -δL * δΨ (residual/nonlinear term)
     RHS_residual = -delta_L_csc.dot(delta_psi_flat)
 
-    # Solve L_base * δΨ_i = RHS_i for each component
-    lu_base = splu(L_base_csc)
+    # Stack RHS for multi-RHS solve
+    rhs_matrix_lhs = np.column_stack([RHS_stability, RHS_residual])
 
-    # Solve for stability and residual components
-    psi_stability_flat = lu_base.solve(RHS_stability)
-    psi_residual_flat = lu_base.solve(RHS_residual)
+    # Keep values as float32 for Fortran interface
 
-    # Reshape back to (nlev, nlat) using module-level helper
-    psi_stability = _reshape_solution(psi_stability_flat, nlat, nlev)
-    psi_residual = _reshape_solution(psi_residual_flat, nlat, nlev)
+    # Solve L_base * δΨ_i = RHS_i using selected solver
+    # Pass 0-indexed COO arrays - each solver handles indexing as needed
+    solve_fn = _SOLVERS.get(solver, _solve_lu)
+    psi_solutions_lhs = solve_fn(
+        None, rhs_matrix_lhs,
+        omega=omega, tol=tol, max_iter=max_iter,
+        row_coo=row_base, col_coo=col_base, val_coo=val_base
+    )
+
+    # Extract solutions and Reshape back to (nlev, nlat) using module-level helper
+    psi_stability = _reshape_solution(psi_solutions_lhs[:, 0], nlat, nlev)
+    psi_residual = _reshape_solution(psi_solutions_lhs[:, 1], nlat, nlev)
 
     # Build result dictionary
     result = {

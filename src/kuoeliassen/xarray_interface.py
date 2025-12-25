@@ -19,7 +19,11 @@ def solve_ke_xarray(
     heating: Optional[xr.DataArray] = None,
     rad_heating: Optional[xr.DataArray] = None,
     latent_heating: Optional[xr.DataArray] = None,
-    qgpv: bool = False
+    qgpv: bool = False,
+    solver: str = 'lu',
+    omega: float = 1.8,
+    tol: float = 1e-8,
+    max_iter: int = 50000
 ) -> xr.Dataset:
     """
     Solve Kuo-Eliassen equation with xarray interface.
@@ -46,6 +50,14 @@ def solve_ke_xarray(
         Latent heating rate [K/s] (must be used with rad_heating)
     qgpv : bool, default=False
         If True, compute QGPV balance diagnostic terms
+    solver : str, default='lu'
+        Solver method: 'lu' (direct) or 'sor' (iterative)
+    omega : float, default=1.8
+        SOR relaxation factor (only used when solver='sor')
+    tol : float, default=1e-8
+        SOR convergence tolerance (only used when solver='sor')
+    max_iter : int, default=50000
+        SOR maximum iterations (only used when solver='sor')
 
     Returns
     -------
@@ -99,7 +111,8 @@ def solve_ke_xarray(
     vu_sorted = vu_eddy.sortby([pressure_dim, latitude_dim], ascending=True)
 
     # Handle heating inputs
-    kwargs = {'qgpv': qgpv}
+    kwargs = {'qgpv': qgpv, 'solver': solver,
+              'omega': omega, 'tol': tol, 'max_iter': max_iter}
     if rad_heating is not None and latent_heating is not None:
         kwargs['rad_heating'] = rad_heating.sortby(
             [pressure_dim, latitude_dim], ascending=True).values
@@ -158,7 +171,11 @@ def solve_ke_LHS_xarray(
     psi_current: xr.DataArray,
     temp_current: xr.DataArray,
     pressure_dim: str = "level",
-    latitude_dim: str = "lat"
+    latitude_dim: str = "lat",
+    solver: str = 'lu',
+    omega: float = 1.8,
+    tol: float = 1e-8,
+    max_iter: int = 50000
 ) -> xr.Dataset:
     """
     Decompose streamfunction anomaly into stability and residual components (xarray interface).
@@ -177,6 +194,14 @@ def solve_ke_LHS_xarray(
         Name of pressure dimension
     latitude_dim : str, default='lat'
         Name of latitude dimension
+    solver : str, default='lu'
+        Solver method: 'lu' (direct) or 'sor' (iterative)
+    omega : float, default=1.8
+        SOR relaxation factor (only used when solver='sor')
+    tol : float, default=1e-8
+        SOR convergence tolerance (only used when solver='sor')
+    max_iter : int, default=50000
+        SOR maximum iterations (only used when solver='sor')
 
     Returns
     -------
@@ -235,7 +260,8 @@ def solve_ke_LHS_xarray(
     result_dict = solve_ke_LHS(
         psi_base_sorted.values, temp_base_sorted.values,
         psi_curr_sorted.values, temp_curr_sorted.values,
-        pressure_pa, latitude_deg
+        pressure_pa, latitude_deg,
+        solver=solver, omega=omega, tol=tol, max_iter=max_iter
     )
 
     # Build output Dataset with appropriate dimensions

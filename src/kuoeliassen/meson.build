@@ -4,6 +4,7 @@ fortran_sources = files(
   'fortran/KuoEliassen_Operator.f90',
   'fortran/KuoEliassen_QGPV_Balance.f90',
   'fortran/KuoEliassen_RHS.f90',
+  'fortran/SOR.f90',
 )
 
 # f2py signature file

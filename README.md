@@ -113,7 +113,7 @@ pip install kuoeliassen
 
 No compiler required! Wheels are provided for:
 - **Linux**: x86_64 (manylinux_2_28)
-- **macOS**: x86_64 (Intel) and arm64 (Apple Silicon)
+- **macOS**: arm64 (Apple Silicon M1/M2/M3)
 - **Windows**: x86_64
 
 ### From Source (Development)
@@ -277,8 +277,7 @@ psi.plot()  # Easy visualization
 | Platform | Python Versions | Architecture | Status |
 |----------|----------------|--------------|--------|
 | Linux    | 3.9 - 3.13     | x86_64       | ✅ Tested |
-| macOS    | 3.9 - 3.13     | x86_64       | ✅ Tested |
-| macOS    | 3.9 - 3.13     | arm64 (M1/M2)| ✅ Tested |
+| macOS    | 3.9 - 3.13     | arm64 (M1/M2/M3)| ✅ Tested |
 | Windows  | 3.9 - 3.13     | x86_64       | ✅ Tested |
 
 ## Requirements

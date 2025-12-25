@@ -1,6 +1,17 @@
-﻿! ke_operator.f90 - Sparse matrix operator assembly
-! Rewritten to match Python solve_KE_equation.py exactly
-! Data layout: (nlev, nlat) in Fortran, but matrix indexed as (lat, lev) like Python
+﻿! ==============================================================================
+! KuoEliassen_Operator.f90 - Sparse matrix operator assembly
+! ==============================================================================
+!
+! Author:  Qianye Su
+! Email:   suqianye2000@gmail.com
+! Created: 2025/11/14 17:27
+!
+! DESCRIPTION:
+!   Assembles the sparse matrix operator (L-operator) for the Kuo-Eliassen
+!   equation in coordinate (COO) sparse matrix format.
+!   Data layout: (nlev, nlat) in Fortran, but matrix indexed as (lat, lev)
+!   like Python implementation.
+! ==============================================================================
 
 ! ============================================================================
 ! SUBROUTINE: build_ke_operator_coo

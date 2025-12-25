@@ -83,6 +83,41 @@ python module KuoEliassen_module
             real(kind=8) dimension(nlev,nlat),intent(out),depend(nlev,nlat) :: momentum_term
             real(kind=8) dimension(nlev,nlat),intent(out),depend(nlev,nlat) :: thermal_term
         end subroutine compute_QGPV_balance_terms
+
+        subroutine sor_solve_ke(temp,p,phi,rhs,nlev,nlat,nrhs,keep_poles,omega,tol,max_iter,solutions,iterations,residuals,status)
+            integer, optional,intent(in),check(shape(temp,0)==nlev),depend(temp) :: nlev=shape(temp,0)
+            integer, optional,intent(in),check(shape(temp,1)==nlat),depend(temp) :: nlat=shape(temp,1)
+            integer, optional,intent(in),check(shape(rhs,2)==nrhs),depend(rhs) :: nrhs=shape(rhs,2)
+            real(kind=8) dimension(nlev,nlat),intent(in) :: temp
+            real(kind=8) dimension(nlev),intent(in),depend(nlev) :: p
+            real(kind=8) dimension(nlat),intent(in),depend(nlat) :: phi
+            real(kind=8) dimension(nlev,nlat,nrhs),intent(in),depend(nlev,nlat) :: rhs
+            integer intent(in) :: keep_poles
+            real(kind=8) intent(in) :: omega
+            real(kind=8) intent(in) :: tol
+            integer intent(in) :: max_iter
+            real(kind=8) dimension(nlev,nlat,nrhs),intent(out),depend(nlev,nlat,nrhs) :: solutions
+            integer dimension(nrhs),intent(out),depend(nrhs) :: iterations
+            real(kind=8) dimension(nrhs),intent(out),depend(nrhs) :: residuals
+            integer dimension(nrhs),intent(out),depend(nrhs) :: status
+        end subroutine sor_solve_ke
+
+        subroutine sor_solve_coo(row_coo,col_coo,val_coo,rhs,n,nnz,nrhs,omega,tol,max_iter,solutions,iterations,residuals,status)
+            integer intent(in) :: n
+            integer intent(in) :: nnz
+            integer intent(in) :: nrhs
+            integer dimension(nnz),intent(in) :: row_coo
+            integer dimension(nnz),intent(in),depend(nnz) :: col_coo
+            real(kind=8) dimension(nnz),intent(in),depend(nnz) :: val_coo
+            real(kind=8) dimension(n,nrhs),intent(in),depend(n,nrhs) :: rhs
+            real(kind=8) intent(in) :: omega
+            real(kind=8) intent(in) :: tol
+            integer intent(in) :: max_iter
+            real(kind=8) dimension(n,nrhs),intent(out),depend(n,nrhs) :: solutions
+            integer dimension(nrhs),intent(out),depend(nrhs) :: iterations
+            real(kind=8) dimension(nrhs),intent(out),depend(nrhs) :: residuals
+            integer dimension(nrhs),intent(out),depend(nrhs) :: status
+        end subroutine sor_solve_coo
         
     end interface
 end python module KuoEliassen_module

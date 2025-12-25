@@ -1,8 +1,16 @@
-! ke_gradient.f90 - Gradient computation subroutines
-! 
-! These subroutines compute spatial derivatives used in the Kuo-Eliassen
-! equation solver. They support both 1D and 2D field operations with
-! proper boundary condition handling.
+! ==============================================================================
+! KuoEliassen_Gradient.f90 - Gradient computation subroutines
+! ==============================================================================
+!
+! Author:  Qianye Su
+! Email:   suqianye2000@gmail.com
+! Created: 2025/11/13 0:05
+!
+! DESCRIPTION:
+!   These subroutines compute spatial derivatives used in the Kuo-Eliassen
+!   equation solver. They support both 1D and 2D field operations with
+!   proper boundary condition handling.
+! ==============================================================================
 
 ! ============================================================================
 ! SUBROUTINE: vertical_gradient

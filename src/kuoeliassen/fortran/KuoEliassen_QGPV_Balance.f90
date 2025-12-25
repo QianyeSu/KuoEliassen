@@ -1,4 +1,15 @@
-! KuoEliassen_qgpv_balance.f90 - QGPV balance diagnostic terms
+! ==============================================================================
+! KuoEliassen_QGPV_Balance.f90 - QGPV balance diagnostic terms
+! ==============================================================================
+!
+! Author:  Qianye Su
+! Email:   suqianye2000@gmail.com
+! Created: 2025/11/13 21:35
+!
+! DESCRIPTION:
+!   Computes diagnostic terms for analyzing steady-state zonal-mean
+!   Quasi-Geostrophic Potential Vorticity (QGPV) balance.
+! ==============================================================================
 
 ! ============================================================================
 ! SUBROUTINE: compute_QGPV_balance_terms

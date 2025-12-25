@@ -1,4 +1,15 @@
-﻿! ke_rhs.f90 - Right-hand-side computation for Kuo-Eliassen equation
+﻿! ==============================================================================
+! KuoEliassen_RHS.f90 - Right-hand-side computation for Kuo-Eliassen equation
+! ==============================================================================
+!
+! Author:  Qianye Su
+! Email:   suqianye2000@gmail.com
+! Created: 2025/11/28 21:45
+!
+! DESCRIPTION:
+!   Computes all right-hand-side (RHS) components (D terms) of the 
+!   Kuo-Eliassen equation in diabatic forcing form.
+! ==============================================================================
 
 ! ============================================================================
 ! SUBROUTINE: compute_rhs_components

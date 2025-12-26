@@ -1,4 +1,20 @@
-# KuoEliassen: Kuo-Eliassen Circulation Solver
+<div align="center">
+  <img src="assets/logo.svg" alt="KuoEliassen Logo" width="400">
+  
+  <!-- <h1>KuoEliassen</h1> -->
+  
+  <p>
+    <h1>A High-Performance Kuo-Eliassen Circulation Solver</h1>
+  </p>
+
+  <!-- <p>
+    <a href="https://badge.fury.io/py/KuoEliassen"><img src="https://badge.fury.io/py/KuoEliassen.svg" alt="PyPI version"></a>
+    <a href="https://github.com/QianyeSu/KuoEliassen/actions/workflows/test-coverage.yml"><img src="https://github.com/QianyeSu/KuoEliassen/actions/workflows/test-coverage.yml/badge.svg?branch=main" alt="Tests"></a>
+    </p> -->
+</div>
+<hr>
+
+
 
 [![PyPI version](https://badge.fury.io/py/KuoEliassen.svg)](https://badge.fury.io/py/KuoEliassen)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/KuoEliassen)](https://pypi.org/project/KuoEliassen/)

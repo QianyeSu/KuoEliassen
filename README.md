@@ -1,5 +1,7 @@
 <div align="center">
-  <img src="assets/logo.svg" alt="KuoEliassen Logo" width="800">
+  <a href="https://github.com/QianyeSu/KuoEliassen">
+    <img src="assets/logo.svg" alt="KuoEliassen Logo" width="600">
+  </a>
   
   <!-- <h1>KuoEliassen</h1> -->
   

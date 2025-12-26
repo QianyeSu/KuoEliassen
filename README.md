@@ -357,6 +357,7 @@ This solver implements the Kuo-Eliassen equation, a fundamental tool in atmosphe
 - **Kim, H.-K. & Lee, S.** (2001). Hadley cell dynamics in a primitive equation model. Part I: axisymmetric flow. *J. Atmos. Sci.*, 58, 2845–2858.
 - **Chemke, R. & Polvani, L. M.** (2019). Opposite tropical circulation trends in climate models and in reanalyses. *Nat. Geosci.*, 12, 528–532.
 - **Pikovnik, M., Zaplotnik, Ž, Boljka, L. & Žagar, N.** (2022). Metrics of the Hadley circulation strength and associated circulation trends. *Weather Clim. Dyn.*, 3, 625–644.
+- **Held, I. M. & Zurita-Gotor, P.** (2025). Misuse of Kuo–Eliassen Equation in Studies of the Climatological Mean Meridional Circulation. *J. Atmos. Sci.*, 82, 1765–1766.
 
 The numerical implementation employs:
 - **SOR (Successive Over-Relaxation)** iterative solver for the elliptic operator

@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/logo.svg" alt="KuoEliassen Logo" width="400">
+  <img src="assets/logo.svg" alt="KuoEliassen Logo" width="800">
   
   <!-- <h1>KuoEliassen</h1> -->
   
@@ -12,7 +12,7 @@
     <a href="https://github.com/QianyeSu/KuoEliassen/actions/workflows/test-coverage.yml"><img src="https://github.com/QianyeSu/KuoEliassen/actions/workflows/test-coverage.yml/badge.svg?branch=main" alt="Tests"></a>
     </p> -->
 </div>
-<hr>
+<!-- <hr> -->
 
 
 

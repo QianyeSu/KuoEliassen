@@ -333,7 +333,7 @@ If you use KuoEliassen in your research, please cite:
 
 ```bibtex
 @software{kuoeliassen2025,
-  author = {Su, Qianye},
+  author = {Qianye Su},
   title = {KuoEliassen: High-Performance Kuo-Eliassen Circulation Solver},
   year = {2025},
   publisher = {Zenodo},

@@ -19,7 +19,7 @@
 
 
 [![PyPI version](https://badge.fury.io/py/KuoEliassen.svg)](https://badge.fury.io/py/KuoEliassen)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18060065.svg)](https://doi.org/10.5281/zenodo.18060065)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18060064.svg)](https://doi.org/10.5281/zenodo.18060064)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/KuoEliassen)](https://pypi.org/project/KuoEliassen/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/KuoEliassen)](https://pypi.org/project/KuoEliassen/)
 [![Tests](https://github.com/QianyeSu/KuoEliassen/actions/workflows/test-coverage.yml/badge.svg?branch=main)](https://github.com/QianyeSu/KuoEliassen/actions/workflows/test-coverage.yml)
@@ -337,9 +337,8 @@ If you use KuoEliassen in your research, please cite:
   title = {KuoEliassen: High-Performance Kuo-Eliassen Circulation Solver},
   year = {2025},
   publisher = {Zenodo},
-  version = {0.2.1},
-  doi = {10.5281/zenodo.18060065},
-  url = {https://doi.org/10.5281/zenodo.18060065}
+  doi = {10.5281/zenodo.18060064},
+  url = {https://doi.org/10.5281/zenodo.18060064}
 }
 ```
 

@@ -353,9 +353,10 @@ For questions, bug reports, or feature requests, please open an issue on GitHub.
 
 This solver implements the Kuo-Eliassen equation, a fundamental tool in atmospheric dynamics for understanding meridional circulation:
 
-- **Kuo, H.-L.** (1956). Three-dimensional equations of motion with small Rossby number. *Physics of Fluids*, 1(4), 290-299.
-- **Eliassen, A.** (1951). Slow thermally or frictionally controlled meridional circulation in a circular vortex. *Astrophysica Norvegica*, 5, 19-60.
-- **Edmon, H. J., et al.** (1980). The effects of a time-varying climatic forcing on the dynamics of the stratosphere. *J. Atmos. Sci.*, 37, 1234-1254.
+- **Kuo, H.-L.** (1956). Forced and free meridional circulations in the atmosphere. *J. Atmos. Sci.*, 13, 561–568.
+- **Kim, H.-K. & Lee, S.** (2001). Hadley cell dynamics in a primitive equation model. Part I: axisymmetric flow. *J. Atmos. Sci.*, 58, 2845–2858.
+- **Chemke, R. & Polvani, L. M.** (2019). Opposite tropical circulation trends in climate models and in reanalyses. *Nat. Geosci.*, 12, 528–532.
+- **Pikovnik, M., Zaplotnik, Ž, Boljka, L. & Žagar, N.** (2022). Metrics of the Hadley circulation strength and associated circulation trends. *Weather Clim. Dyn.*, 3, 625–644.
 
 The numerical implementation employs:
 - **SOR (Successive Over-Relaxation)** iterative solver for the elliptic operator

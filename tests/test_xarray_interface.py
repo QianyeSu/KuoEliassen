@@ -486,6 +486,78 @@ class TestXarrayIntegration:
         assert not np.any(np.isinf(result['PSI_Q'].values))
 
 
+class TestXarrayErrorHandling:
+    """Test error handling for xarray interface."""
+
+    def test_missing_heating_error(self):
+        """Test that missing heating raises ValueError."""
+        np.random.seed(42)
+        nz, ny = 8, 5
+        p = np.array([1000, 925, 850, 700, 500, 300, 200, 100]) * 100.0
+        lat = np.array([20, 30, 40, 50, 60], dtype=np.float64)
+
+        ds = xr.Dataset({
+            'v': (['pressure', 'latitude'], np.random.randn(nz, ny)),
+            'temp': (['pressure', 'latitude'], np.random.randn(nz, ny) * 10 + 273.15),
+            'vt_eddy': (['pressure', 'latitude'], np.random.randn(nz, ny) * 0.1),
+            'vu_eddy': (['pressure', 'latitude'], np.random.randn(nz, ny) * 0.1),
+        }, coords={'pressure': p, 'latitude': lat})
+
+        # Call without any heating parameter should raise error
+        with pytest.raises(ValueError, match="Either 'heating' or both 'rad_heating' and 'latent_heating' must be provided"):
+            solve_ke_xarray(
+                v=ds['v'],
+                temperature=ds['temp'],
+                vt_eddy=ds['vt_eddy'],
+                vu_eddy=ds['vu_eddy'],
+                pressure_dim='pressure',
+                latitude_dim='latitude'
+            )
+
+    def test_dimension_mismatch_error(self):
+        """Test that dimension mismatch in solve_ke_LHS_xarray raises ValueError."""
+        np.random.seed(42)
+        nz, ny = 8, 5
+        p = np.array([1000, 925, 850, 700, 500, 300, 200, 100]) * 100.0
+        lat = np.array([20, 30, 40, 50, 60], dtype=np.float64)
+
+        # Create base with 2D data
+        psi_base = xr.DataArray(
+            np.random.randn(nz, ny),
+            dims=['pressure', 'latitude'],
+            coords={'pressure': p, 'latitude': lat}
+        )
+        temp_base = xr.DataArray(
+            np.random.randn(nz, ny) * 10 + 273.15,
+            dims=['pressure', 'latitude'],
+            coords={'pressure': p, 'latitude': lat}
+        )
+
+        # Create current with 3D data (incompatible dimensions)
+        time = np.arange(3)
+        psi_current = xr.DataArray(
+            np.random.randn(3, nz, ny),
+            dims=['time', 'pressure', 'latitude'],
+            coords={'time': time, 'pressure': p, 'latitude': lat}
+        )
+        temp_current = xr.DataArray(
+            np.random.randn(3, nz, ny) * 10 + 273.15,
+            dims=['time', 'pressure', 'latitude'],
+            coords={'time': time, 'pressure': p, 'latitude': lat}
+        )
+
+        # Should raise ValueError due to dimension mismatch
+        with pytest.raises(ValueError, match="Dimension mismatch"):
+            solve_ke_LHS_xarray(
+                psi_base=psi_base,
+                temp_base=temp_base,
+                psi_current=psi_current,
+                temp_current=temp_current,
+                pressure_dim='pressure',
+                latitude_dim='latitude'
+            )
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v', '--cov=src/kuoeliassen',
                 '--cov-report=term-missing'])

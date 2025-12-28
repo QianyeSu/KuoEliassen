@@ -231,22 +231,24 @@ def solve_ke(
     # Handle 3D input by recursive call
     if v.ndim == 3:
         ntime, nlev, nlat = v.shape
-        results = []
-        for t in range(ntime):
-            # Extract 2D slice and recursively call
-            kwargs = {'qgpv': qgpv, 'solver': solver,
-                      'omega': omega, 'tol': tol, 'max_iter': max_iter}
-            if rad_heating is not None and latent_heating is not None:
-                kwargs.update(
-                    {'rad_heating': rad_heating[t], 'latent_heating': latent_heating[t]})
-            elif heating is not None:
-                kwargs['heating'] = heating[t]
-            else:
-                raise ValueError(
-                    "Either 'heating' or both 'rad_heating' and 'latent_heating' required")
 
-            results.append(solve_ke(v[t], temperature[t], vt_eddy[t], vu_eddy[t],
-                                    pressure, latitude, **kwargs))
+        # Prepare heating kwargs for each time step
+        if rad_heating is not None and latent_heating is not None:
+            heating_kwargs = [{'rad_heating': rad_heating[t], 'latent_heating': latent_heating[t]}
+                              for t in range(ntime)]
+        elif heating is not None:
+            heating_kwargs = [{'heating': heating[t]} for t in range(ntime)]
+        else:
+            raise ValueError(
+                "Either 'heating' or both 'rad_heating' and 'latent_heating' required")
+
+        # Solve for each time step
+        results = [
+            solve_ke(v[t], temperature[t], vt_eddy[t], vu_eddy[t], pressure, latitude,
+                     qgpv=qgpv, solver=solver, omega=omega, tol=tol, max_iter=max_iter,
+                     **heating_kwargs[t])
+            for t in range(ntime)
+        ]
 
         # Stack results
         return {key: np.stack([r[key] for r in results], axis=0) for key in results[0].keys()}
@@ -540,10 +542,9 @@ def solve_ke_LHS(
                 raise ValueError(
                     f"{name} shape {arr.shape} != {expected_shape}")
 
-        if pressure.shape != (nlev,):
-            raise ValueError(f"pressure shape {pressure.shape} != ({nlev},)")
-        if latitude.shape != (nlat,):
-            raise ValueError(f"latitude shape {latitude.shape} != ({nlat},)")
+        for arr, name, expected in [(pressure, 'pressure', (nlev,)), (latitude, 'latitude', (nlat,))]:
+            if arr.shape != expected:
+                raise ValueError(f"{name} shape {arr.shape} != {expected}")
 
     # Convert latitude to radians
     phi = np.deg2rad(latitude)
@@ -552,60 +553,38 @@ def solve_ke_LHS(
     arrays_f32 = {name: np.asfortranarray(arr, dtype=np.float32)
                   for name, arr in [('temp_base', temp_base), ('temp_current', temp_current),
                                     ('p', pressure), ('phi', phi)]}
-    temp_base_f, temp_current_f = arrays_f32['temp_base'], arrays_f32['temp_current']
-    p_f, phi_f = arrays_f32['p'], arrays_f32['phi']
 
     keep_poles_int = 1
     n_total = nlev * nlat
     max_nnz = n_total * 5
 
-    # Build base operator L_base (from base temperature)
-    row_base, col_base, val_base, nnz_base = KuoEliassen_module.build_ke_operator_coo(
-        temp_base_f, p_f, phi_f, keep_poles_int, max_nnz
-    )
+    # Build both operators (base and current) using helper function
+    def _build_operator_csc(temp_f, p_f, phi_f):
+        """Build and return CSC sparse matrix from temperature field"""
+        row, col, val, nnz = KuoEliassen_module.build_ke_operator_coo(
+            temp_f, p_f, phi_f, keep_poles_int, max_nnz
+        )
+        # Trim to actual nnz and create CSC matrix directly
+        coo = coo_matrix((val[:nnz], (row[:nnz], col[:nnz])),
+                         shape=(n_total, n_total))
+        return coo.tocsc(), row[:nnz], col[:nnz], val[:nnz]
 
-    # Trim to actual nnz (Fortran already returns 0-indexed)
-    row_base = row_base[:nnz_base]
-    col_base = col_base[:nnz_base]
-    val_base = val_base[:nnz_base]
+    L_base_csc, row_base, col_base, val_base = _build_operator_csc(
+        arrays_f32['temp_base'], arrays_f32['p'], arrays_f32['phi'])
+    L_current_csc, _, _, _ = _build_operator_csc(
+        arrays_f32['temp_current'], arrays_f32['p'], arrays_f32['phi'])
 
-    # Build current operator L_current (from current temperature)
-    row_curr, col_curr, val_curr, nnz_curr = KuoEliassen_module.build_ke_operator_coo(
-        temp_current_f, p_f, phi_f, keep_poles_int, max_nnz
-    )
+    # Compute streamfunction anomaly and flatten to vectors (Fortran order)
+    delta_psi = psi_current - psi_base
 
-    # Trim to actual nnz (Fortran already returns 0-indexed)
-    row_curr = row_curr[:nnz_curr]
-    col_curr = col_curr[:nnz_curr]
-    val_curr = val_curr[:nnz_curr]
-
-    # Create sparse matrices for delta_L computation
-    L_base_coo = coo_matrix(
-        (val_base, (row_base, col_base)), shape=(n_total, n_total))
-    L_current_coo = coo_matrix(
-        (val_curr, (row_curr, col_curr)), shape=(n_total, n_total))
-    L_base_csc = L_base_coo.tocsc()
-    L_current_csc = L_current_coo.tocsc()
-
-    # Compute streamfunction anomaly
-    delta_psi = psi_current - psi_base  # δΨ
-
-    # Flatten fields to vectors (Fortran order: lat varies fastest)
-    psi_base_flat = psi_base.T.ravel('F')
-    delta_psi_flat = delta_psi.T.ravel('F')
-
-    # Compute δL = L_current - L_base
+    # Compute δL and RHS terms for multi-RHS solve  (Compute δL = L_current - L_base)
     delta_L_csc = L_current_csc - L_base_csc
-
-    # Compute RHS terms for decomposition
-    # Term 1: -δL * Ψ_base (static stability change effect on base state)
-    RHS_stability = -delta_L_csc.dot(psi_base_flat)
-
-    # Term 2: -δL * δΨ (residual/nonlinear term)
-    RHS_residual = -delta_L_csc.dot(delta_psi_flat)
-
-    # Stack RHS for multi-RHS solve
-    rhs_matrix_lhs = np.column_stack([RHS_stability, RHS_residual])
+    rhs_matrix_lhs = np.column_stack([
+        # Term 1: stability change effect -δL * Ψ_base (static stability change effect on base state)
+        -delta_L_csc.dot(psi_base.T.ravel('F')),
+        # Term 2: residual/nonlinear term -δL * δΨ (residual/nonlinear term)
+        -delta_L_csc.dot(delta_psi.T.ravel('F'))
+    ])
 
     # Keep values as float32 for Fortran interface
 

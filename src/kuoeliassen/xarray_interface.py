@@ -148,11 +148,9 @@ def solve_ke_xarray(
                      'long_name': f'{key} streamfunction component'}
         elif key == 'D':
             attrs = {'units': 'K/s', 'long_name': 'Total RHS forcing'}
-        elif key in ['momentum_term', 'thermal_term', 'residual']:
+        else:  # momentum_term, thermal_term, residual
             attrs = {'units': 's^-2',
                      'long_name': key.replace('_', ' ').title()}
-        else:
-            attrs = {}
 
         data_vars[key] = xr.DataArray(
             values, dims=dims, coords=coords, attrs=attrs)

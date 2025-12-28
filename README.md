@@ -185,9 +185,9 @@ result = solve_ke(v, temperature, vt_eddy, vu_eddy, pressure, latitude,
 ```python
 result = solve_ke(v, temperature, vt_eddy, vu_eddy, pressure, latitude,
                   solver='sor',
-                  omega=1.85,      # Relaxation factor (1.0-2.0, default=1.8)
-                  tol=1e-10,       # Convergence tolerance (default=1e-10)
-                  max_iter=100000) # Maximum iterations (default=100000)
+                  omega=1.8,      # Relaxation factor (1.0-2.0, default=1.8)
+                  tol=1e-8,       # Convergence tolerance (default=1e-8)
+                  max_iter=50000) # Maximum iterations (default=50000)
 ```
 
 **Omega Parameter Tuning**:

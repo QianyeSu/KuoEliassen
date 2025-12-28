@@ -89,7 +89,9 @@ $$S^2 = -\frac{1}{\rho\theta}\frac{\partial\theta}{\partial p}$$
 
 Alternatively, in terms of absolute temperature:
 
-$$S^2 \approx \frac{g}{T}\left(\frac{\partial T}{\partial p} + \frac{g}{c_p}\right)$$
+$$S^2 = -\left\{ \frac{1}{p\theta} \frac{\partial \theta}{\partial p} \right\}
+= -\left( \frac{R_d}{p} \right) 
+\left\{ \frac{\partial T}{\partial p} - \left( \frac{R_d}{c_p} \right) \frac{T}{p} \right\}$$
 
 where:
 - **ρ** — air density [kg/m³]

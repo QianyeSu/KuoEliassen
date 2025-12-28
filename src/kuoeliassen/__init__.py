@@ -1,5 +1,5 @@
 """
-KuoEliassen - High-Performance Kuo-Eliassen Circulation Solver
+KuoEliassen - A High-Performance Solver for the Kuo-Eliassen Equation
 Author: Qianye Su 
 Email: suqianye2000@gmail.com
 Created: 2025/11/12 12:05

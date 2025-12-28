@@ -79,7 +79,7 @@ jobs:
       # Build wheels for Windows
       - name: Build wheels (Windows)
         if: matrix.buildplat[1] == 'win_amd64'
-        uses: pypa/cibuildwheel@v3.2.1
+        uses: pypa/cibuildwheel@v3.3.0
         with:
           output-dir: wheelhouse
         env:
@@ -94,7 +94,7 @@ jobs:
       # Build wheels for macOS x86_64
       - name: Build wheels (macOS x86_64)
         if: matrix.buildplat[1] == 'macosx_x86_64'
-        uses: pypa/cibuildwheel@v3.2.1
+        uses: pypa/cibuildwheel@v3.3.0
         with:
           output-dir: wheelhouse
         env:
@@ -108,7 +108,7 @@ jobs:
       # Build wheels for macOS arm64
       - name: Build wheels (macOS arm64)
         if: matrix.buildplat[1] == 'macosx_arm64'
-        uses: pypa/cibuildwheel@v3.2.1
+        uses: pypa/cibuildwheel@v3.3.0
         with:
           output-dir: wheelhouse
         env:
@@ -122,7 +122,7 @@ jobs:
       # Build wheels for Linux x86_64
       - name: Build wheels (Linux x86_64)
         if: matrix.buildplat[1] == 'manylinux_x86_64'
-        uses: pypa/cibuildwheel@v3.2.1
+        uses: pypa/cibuildwheel@v3.3.0
         with:
           output-dir: wheelhouse
         env:

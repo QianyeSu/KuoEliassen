@@ -336,7 +336,7 @@ If you use KuoEliassen in your research, please cite:
 ```bibtex
 @software{kuoeliassen2025,
   author = {Su, Qianye},
-  title = {KuoEliassen: High-Performance Kuo-Eliassen Circulation Solver},
+  title = {KuoEliassen: A High-Performance Solver for the Kuo-Eliassen Equation},
   year = {2025},
   publisher = {Zenodo},
   doi = {10.5281/zenodo.18060064},

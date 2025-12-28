@@ -1,13 +1,12 @@
 """
 KuoEliassen - High-Performance Kuo-Eliassen Circulation Solver
+Author: Qianye Su 
+Email: suqianye2000@gmail.com
+Created: 2025/11/12 12:05
 """
 
 from .core import solve_ke, solve_ke_LHS
 from .xarray_interface import solve_ke_xarray, solve_ke_LHS_xarray
-import re
-from pathlib import Path
-_pyproject = Path(__file__).parent.parent.parent / "pyproject.toml"
-__version__ = re.search(  # Read version from pyproject.toml
-    r'version\s*=\s*"([^"]+)"', _pyproject.read_text()).group(1)
+__version__ = '0.2.2'
 __author__ = "Qianye Su"
 __all__ = ["solve_ke", "solve_ke_xarray"]

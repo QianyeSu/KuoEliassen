@@ -1,5 +1,5 @@
 {
-  "title": "KuoEliassen: High-Performance Kuo-Eliassen Circulation Solver",
+  "title": "KuoEliassen: A High-Performance Solver for the Kuo-Eliassen Equation",
   "description": "A high-performance, production-ready solver for the Kuo-Eliassen equation describing meridional atmospheric circulation forced by diabatic heating and eddy fluxes. Combines optimized Fortran 90 backend with intuitive Python interface.",
   "creators": [
     {

@@ -6,7 +6,7 @@
   <!-- <h1>KuoEliassen</h1> -->
   
   <p>
-    <h1>A High-Performance Kuo-Eliassen Circulation Solver</h1>
+    <h1>KuoEliassen: A High-Performance Solver for the Kuo-Eliassen Equation</h1>
   </p>
 
   <!-- <p>

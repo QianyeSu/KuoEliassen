@@ -1,7 +1,20 @@
+# Read version from pyproject.toml
+version_cmd = run_command(
+  py,
+  ['-c', '''
+import re
+with open("pyproject.toml") as f:
+    match = re.search(r'version\\s*=\\s*"([^"]+)"', f.read())
+    print(match.group(1) if match else "0.0.0")
+'''],
+  check: true,
+)
+project_version = version_cmd.stdout().strip()
+
 project(
   'KuoEliassen',
   'c', 'fortran',
-  version: '0.1.0',
+  version: project_version,
   license: 'BSD-3-Clause',
   meson_version: '>=1.1.0',
   default_options: [

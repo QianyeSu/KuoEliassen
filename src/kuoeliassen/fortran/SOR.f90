@@ -568,16 +568,29 @@ subroutine sor_solve_coo(row_coo, col_coo, val_coo, rhs, n, nnz, nrhs, &
     ! Allocate CSR arrays
     allocate(row_ptr(n + 1), col_ind(nnz), csr_values(nnz))
     allocate(diag_inv(n))
-    allocate(rhs_vec(n), sol_vec(n), work_vec(n))
-
+    
+    ! Allocate workspace for parallel execution
+    ! We need separate workspace for each thread/RHS
+    ! But since we can't easily use OpenMP inside a subroutine without changing interface significantly
+    ! or relying on automatic arrays which might overflow stack, we'll use allocatable arrays inside the loop
+    ! or rely on the compiler to handle private variables if we use OpenMP.
+    
+    ! For now, let's keep it serial but optimize memory allocation pattern.
+    ! Actually, to support OpenMP, we should allocate these inside the parallel region or make them private.
+    
     ! Convert COO to CSR
     call coo_to_csr_local(row_coo, col_coo, val_coo, n, nnz, row_ptr, col_ind, csr_values)
 
     ! Pre-calculate inverse diagonal
     call extract_diag_inv_local(n, row_ptr, col_ind, csr_values, diag_inv)
 
-    ! Solve for each RHS
+    ! Solve for each RHS - Parallelized with OpenMP
+    !$OMP PARALLEL DO PRIVATE(comp, i, has_nonzero, rhs_vec, sol_vec, work_vec) &
+    !$OMP SHARED(nrhs, n, rhs, solutions, iterations, residuals, status, row_ptr, col_ind, csr_values, diag_inv, omega_local, tol_local, max_iter)
     do comp = 1, nrhs
+        ! Allocate thread-private arrays
+        allocate(rhs_vec(n), sol_vec(n), work_vec(n))
+        
         ! Copy RHS and check for non-zero
         has_nonzero = .false.
         do i = 1, n
@@ -607,10 +620,13 @@ subroutine sor_solve_coo(row_coo, col_coo, val_coo, rhs, n, nnz, nrhs, &
             
             solutions(:, comp) = sol_vec
         end if
+        
+        deallocate(rhs_vec, sol_vec, work_vec)
     end do
+    !$OMP END PARALLEL DO
 
     deallocate(row_ptr, col_ind, csr_values, diag_inv)
-    deallocate(rhs_vec, sol_vec, work_vec)
+    ! deallocate(rhs_vec, sol_vec, work_vec) ! Removed as they are now thread-local
 
 contains
 
@@ -667,7 +683,11 @@ contains
         ! Count elements per row (input is 0-based, convert to 1-based)
         do i = 1, nz
             row = row_in(i) + 1   ! Convert 0-based to 1-based
-            if (row >= 1 .and. row <= np) count(row) = count(row) + 1
+            ! Check both row and column bounds to ensure safe access in solver
+            if (row >= 1 .and. row <= np .and. &
+                col_in(i) >= 0 .and. col_in(i) < np) then
+                count(row) = count(row) + 1
+            end if
         end do
         
         ! Build row pointers
@@ -682,7 +702,8 @@ contains
         ! Fill CSR arrays (convert indices from 0-based to 1-based)
         do i = 1, nz
             row = row_in(i) + 1   ! Convert 0-based to 1-based
-            if (row >= 1 .and. row <= np) then
+            if (row >= 1 .and. row <= np .and. &
+                col_in(i) >= 0 .and. col_in(i) < np) then
                 pos = rp(row) + count(row)
                 ci(pos) = col_in(i) + 1   ! Convert 0-based to 1-based
                 cv(pos) = val_in(i)
@@ -810,9 +831,14 @@ contains
         integer, intent(out) :: iter, stat
         
         integer :: it, row, idx, col
-        real(kind=8) :: sigma, x_new, bnorm, rnorm
+        real(kind=8) :: sigma, bnorm, rnorm, residual_val
+        real(kind=8), allocatable :: wdinv(:)
         integer, parameter :: CHECK_INTERVAL = 50
         
+        ! Precompute w * dinv for faster updates
+        allocate(wdinv(np))
+        wdinv = w * dinv
+
         ! Compute ||b||
         bnorm = 0.0d0
         do row = 1, np
@@ -827,14 +853,18 @@ contains
             ! SOR sweep
             do row = 1, np
                 sigma = 0.0d0
+                ! Sum all A_ij * x_j (including diagonal)
+                ! We assume column indices are valid (checked during CSR conversion)
                 do idx = rp(row), rp(row + 1) - 1
                     col = ci(idx)
-                    if (col /= row .and. col >= 1 .and. col <= np) then
-                        sigma = sigma + cv(idx) * x(col)
-                    end if
+                    sigma = sigma + cv(idx) * x(col)
                 end do
-                x_new = dinv(row) * (b(row) - sigma)
-                x(row) = x(row) + w * (x_new - x(row))
+                
+                ! Residual r_i = b_i - (Ax)_i
+                residual_val = b(row) - sigma
+                
+                ! Update: x_new = x_old + (w/A_ii) * r_i
+                x(row) = x(row) + wdinv(row) * residual_val
             end do
             
             ! Check convergence periodically
@@ -845,7 +875,7 @@ contains
                     sigma = 0.0d0
                     do idx = rp(row), rp(row + 1) - 1
                         col = ci(idx)
-                        if (col >= 1 .and. col <= np) sigma = sigma + cv(idx) * x(col)
+                        sigma = sigma + cv(idx) * x(col)
                     end do
                     work(row) = b(row) - sigma
                     rnorm = rnorm + work(row) * work(row)
@@ -856,11 +886,13 @@ contains
                 if (res < tl) then
                     stat = 0
                     iter = it
+                    deallocate(wdinv)
                     return
                 end if
             end if
         end do
         
+        deallocate(wdinv)
         iter = maxit
     end subroutine sor_kernel
 

@@ -15,33 +15,16 @@ def benchmark():
     data_path = os.path.join("examples", "example_data.nc")
     print(f"Loading data from: {data_path}")
 
-    try:
-        ds = xr.open_dataset(data_path).sel(latitude=slice(-89.9, 89.9))
-    except FileNotFoundError:
-        print(f"Error: File not found at {data_path}")
-        # Create dummy data for testing if file missing
-        print("Generating synthetic data instead...")
-        nlev, nlat = 30, 180
-        p = np.linspace(100, 100000, nlev)
-        lat = np.linspace(-89.9, 89.9, nlat)
-        v = np.zeros((nlev, nlat))
-        temp = np.ones((nlev, nlat)) * 250.0
-        vt = np.zeros((nlev, nlat))
-        vu = np.zeros((nlev, nlat))
-        heating = np.ones((nlev, nlat)) * 1e-4
-    else:
-        # Prepare data as per user's method
-        v = ds['v'].fillna(0.0).values
-        temp = ds['temperature'].fillna(200.0).values
-        vt = ds['vt_eddy'].fillna(0.0).values
-        vu = ds['vu_eddy'].fillna(0.0).values
-        p = ds['pressure'].values
-        lat = ds['latitude'].values
-        if 'diabatic_heating' in ds:
-            heating = ds['diabatic_heating'].fillna(0.0).values
-        else:
-            heating = np.zeros_like(temp)
-
+    ds = xr.open_dataset(data_path).sel(latitude=slice(-89.9, 89.9))
+    # Prepare data as per user's method
+    v = ds['v'].fillna(0.0).values
+    temp = ds['temperature'].fillna(200.0).values
+    vt = ds['vt_eddy'].fillna(0.0).values
+    vu = ds['vu_eddy'].fillna(0.0).values
+    p = ds['pressure'].values
+    lat = ds['latitude'].values
+    if 'diabatic_heating' in ds:
+        heating = ds['diabatic_heating'].fillna(0.0).values
     print(f"Grid Dimensions: {len(p)} levels x {len(lat)} latitudes")
     print("-" * 60)
 
@@ -85,7 +68,7 @@ def benchmark():
     # Accuracy
     abs_diff = np.abs(psi_lu - psi_sor)
     max_diff = np.max(abs_diff)
-    mean_psi = np.mean(np.abs(psi_lu))
+    # mean_psi = np.mean(np.abs(psi_lu))
     rel_diff = max_diff / (np.max(np.abs(psi_lu)) + 1e-20)
 
     print(f"  Max Absolute Diff: {max_diff:.4e} kg/s")

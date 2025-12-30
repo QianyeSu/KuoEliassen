@@ -1,8 +1,6 @@
 """
 xarray interface for KuoEliassen Solver
 """
-
-import numpy as np
 import xarray as xr
 from typing import Optional
 from .core import solve_ke, solve_ke_LHS

@@ -7,6 +7,6 @@ Created: 2025/11/12 12:05
 
 from .core import solve_ke, solve_ke_LHS
 from .xarray_interface import solve_ke_xarray, solve_ke_LHS_xarray
-__version__ = '0.2.2'
+__version__ = '0.2.3'
 __author__ = "Qianye Su"
 __all__ = ["solve_ke", "solve_ke_xarray"]

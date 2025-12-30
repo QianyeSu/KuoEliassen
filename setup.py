@@ -1,7 +1,7 @@
 """
 Setup script for KuoEliassen - Meson-based build system with Fortran backend
 """
-
+# $env:CC='gcc'; $env:FC='gfortran'; pip install -e . --no-build-isolation
 import os
 import shutil
 import subprocess

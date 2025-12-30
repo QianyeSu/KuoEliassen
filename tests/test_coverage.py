@@ -129,7 +129,7 @@ class TestShapeValidation:
         vu_eddy = np.random.rand(nlev, nlat)
         heating = np.random.rand(nlev, nlat)
 
-        with pytest.raises(ValueError, match="pressure/latitude shape mismatch"):
+        with pytest.raises(ValueError, match="pressure shape mismatch"):
             solve_ke(v, temperature, vt_eddy, vu_eddy,
                      pressure, latitude, heating=heating)
 
@@ -145,7 +145,7 @@ class TestShapeValidation:
         vu_eddy = np.random.rand(nlev, nlat)
         heating = np.random.rand(nlev, nlat)
 
-        with pytest.raises(ValueError, match="pressure/latitude shape mismatch"):
+        with pytest.raises(ValueError, match="latitude shape mismatch"):
             solve_ke(v, temperature, vt_eddy, vu_eddy,
                      pressure, latitude, heating=heating)
 
@@ -236,6 +236,21 @@ class TestLHSShapeValidation:
         temp_current = np.random.rand(ntime, nlev, nlat) * 50 + 260
 
         with pytest.raises(ValueError, match="shape"):
+            solve_ke_LHS(psi_base, temp_base, psi_current, temp_current,
+                         pressure, latitude)
+
+    def test_lhs_3d_base_dim_mismatch(self):
+        """Test 3D base state dimension validation (line 438)"""
+        nlev, nlat, ntime = 5, 8, 3
+        pressure = np.linspace(10000, 100000, nlev)
+        latitude = np.linspace(-60, 60, nlat)
+
+        psi_base = np.random.rand(nlev) * 1e10  # Wrong dim (1D)
+        temp_base = np.random.rand(ntime, nlev, nlat) * 50 + 250
+        psi_current = np.random.rand(ntime, nlev, nlat) * 1e10
+        temp_current = np.random.rand(ntime, nlev, nlat) * 50 + 260
+
+        with pytest.raises(ValueError, match="psi_base must be 2D or 3D"):
             solve_ke_LHS(psi_base, temp_base, psi_current, temp_current,
                          pressure, latitude)
 

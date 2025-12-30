@@ -4,7 +4,7 @@ build-backend = "mesonpy"
 
 [project]
 name = "KuoEliassen"
-version = "0.2.2"
+version = "0.2.3"
 description = "KuoEliassen: A High-Performance Solver for the Kuo-Eliassen Equation"
 readme = "README.md"
 license = { text = "BSD-3-Clause" }

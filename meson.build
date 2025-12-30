@@ -1,7 +1,7 @@
 project(
   'KuoEliassen',
   'c', 'fortran',
-  version: '0.2.2',  # Update this when releasing new versions
+  version: '0.2.3',  # Update this when releasing new versions
   license: 'BSD-3-Clause',
   meson_version: '>=1.1.0',
   default_options: [

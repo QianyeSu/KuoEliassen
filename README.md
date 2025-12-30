@@ -107,7 +107,7 @@ where:
 The solver produces meridional streamfunction fields that reveal Hadley and Ferrel cell circulations:
 
 <div align="center">
-  <img src="examples/kuoeliassen.png" alt="Example Kuo-Eliassen solution" width="100%"/>
+  <img src="https://raw.githubusercontent.com/QianyeSu/KuoEliassen/main/examples/kuoeliassen.png" alt="Example Kuo-Eliassen solution" width="100%"/>
   <p><i>Meridional mass streamfunction and Kuo-Eliassen equation solution</i></p>
 </div>
 

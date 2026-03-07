@@ -334,6 +334,17 @@ This project is licensed under the BSD-3-Clause License - see the [LICENSE](LICE
 If you use KuoEliassen in your research, please cite:
 
 ```bibtex
+@article{Su2025,
+  author = {Su, Q. and Liu, C. and Zhang, Y. and Qiu, J. and Li, J. and Xue, Y. and Cao, N. and Liao, X. and Yang, K. and Zheng, R. and Liang, Z. and Jin, L. and Huang, K. and Jin, K. and Zhou, N.},
+  title = {Consistency of Changes in the Ascending and Descending Positions of the Hadley Circulation Using Different Methods},
+  journal = {Atmosphere},
+  year = {2025},
+  volume = {16},
+  number = {4},
+  pages = {367},
+  doi = {10.3390/atmos16040367}
+}
+
 @software{kuoeliassen2025,
   author = {Su, Qianye},
   title = {KuoEliassen: A High-Performance Solver for the Kuo-Eliassen Equation},
@@ -357,7 +368,7 @@ For questions, bug reports, or feature requests, please open an issue on GitHub.
 ## Acknowledgments & References
 
 This solver implements the Kuo-Eliassen equation, a fundamental tool in atmospheric dynamics for understanding meridional circulation:
-
+- **Su, Q., Liu, C., Zhang, Y., Qiu, J., Li, J., Xue, Y., Cao, N., Liao, X., Yang, K., Zheng, R., Liang, Z., Jin, L., Huang, K., Jin, K., & Zhou, N.** (2025). Consistency of Changes in the Ascending and Descending Positions of the Hadley Circulation Using Different Methods. *Atmosphere*, **16**(4), 367. https://doi.org/10.3390/atmos16040367
 - **Kuo, H.-L.** (1956). Forced and free meridional circulations in the atmosphere. *J. Atmos. Sci.*, **13**, 561–568.
 - **Kim, H.-K. & Lee, S.** (2001). Hadley cell dynamics in a primitive equation model. Part I: axisymmetric flow. *J. Atmos. Sci.*, **58**, 2845–2858.
 - **Chemke, R. & Polvani, L. M.** (2019). Opposite tropical circulation trends in climate models and in reanalyses. *Nat. Geosci.*, **12**, 528–532.

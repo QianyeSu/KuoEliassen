@@ -86,7 +86,7 @@ jobs:
         include:
           - label: x86_64
             os: macos-15-intel
-            deployment_target: "13.0"
+            deployment_target: "15.0"
             artifact_name: wheel-macos-x86_64
             build_selector: >-
               cp39-macosx_x86_64
@@ -163,6 +163,7 @@ jobs:
           submodules: recursive
 
       - name: Setup Windows Fortran (msys2)
+        id: msys2
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
@@ -174,18 +175,14 @@ jobs:
       - name: Add MinGW toolchain to PATH
         shell: pwsh
         run: |
-          "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          "C:\msys64\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "${{ steps.msys2.outputs.msys2-location }}\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Build wheels (Windows)
         uses: pypa/cibuildwheel@v3.4.0
         with:
           output-dir: wheelhouse
         env:
-          CC: C:\msys64\mingw64\bin\gcc.exe
-          FC: C:\msys64\mingw64\bin\gfortran.exe
-          F77: C:\msys64\mingw64\bin\gfortran.exe
-          F90: C:\msys64\mingw64\bin\gfortran.exe
           CIBW_BUILD: >-
             cp39-win_amd64
             cp310-win_amd64
@@ -195,8 +192,19 @@ jobs:
             cp314-win_amd64
           CIBW_SKIP: "*-win32 *-musllinux*"
           CIBW_BEFORE_BUILD_WINDOWS: python -m pip install meson ninja delvewheel
-          CIBW_ENVIRONMENT_WINDOWS: PIP_PREFER_BINARY=1 PIP_ONLY_BINARY=numpy,scipy
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path C:\msys64\mingw64\bin -w {dest_dir} {wheel}
+          CIBW_ENVIRONMENT_WINDOWS: >-
+            PATH="${{ steps.msys2.outputs.msys2-location }}\\mingw64\\bin;${{ steps.msys2.outputs.msys2-location }}\\usr\\bin;$PATH"
+            CC=gcc
+            FC=gfortran
+            F77=gfortran
+            F90=gfortran
+            PIP_PREFER_BINARY=1
+            PIP_ONLY_BINARY=numpy,scipy
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >-
+            delvewheel repair
+            --add-path ${{ steps.msys2.outputs.msys2-location }}\mingw64\bin
+            -w {dest_dir}
+            {wheel}
           CIBW_TEST_COMMAND: python -c "import kuoeliassen; from kuoeliassen import solve_ke; print('Import test passed')"
           CIBW_BUILD_VERBOSITY: 1
 

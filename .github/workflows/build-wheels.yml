@@ -39,6 +39,7 @@ jobs:
               cp311-manylinux_x86_64
               cp312-manylinux_x86_64
               cp313-manylinux_x86_64
+              cp314-manylinux_x86_64
           - label: manylinux_2_28_x86_64
             artifact_name: wheel-linux-manylinux_2_28_x86_64
             manylinux_image: manylinux_2_28

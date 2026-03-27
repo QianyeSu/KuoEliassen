@@ -23,19 +23,32 @@ permissions:
   contents: read
 
 jobs:
-  build_wheels:
-    name: Build wheel ${{ matrix.python }}-${{ matrix.buildplat[1] }}
-    runs-on: ${{ matrix.buildplat[0] }}
+  build_linux:
+    name: Build Linux wheels (${{ matrix.label }})
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        # Multi-platform build matrix
-        buildplat:
-          - [ubuntu-22.04, manylinux_x86_64]
-          # - [macos-13, macosx_x86_64] # macOS Intel (disabled)
-          - [macos-14, macosx_arm64] # macOS Apple Silicon
-          - [windows-2022, win_amd64]
-        python: ["cp39", "cp310", "cp311", "cp312", "cp313", "cp314"]
+        include:
+          - label: manylinux2014_x86_64
+            artifact_name: wheel-linux-manylinux2014_x86_64
+            manylinux_image: manylinux2014
+            build_selector: >-
+              cp39-manylinux_x86_64
+              cp310-manylinux_x86_64
+              cp311-manylinux_x86_64
+              cp312-manylinux_x86_64
+              cp313-manylinux_x86_64
+          - label: manylinux_2_28_x86_64
+            artifact_name: wheel-linux-manylinux_2_28_x86_64
+            manylinux_image: manylinux_2_28
+            build_selector: >-
+              cp39-manylinux_x86_64
+              cp310-manylinux_x86_64
+              cp311-manylinux_x86_64
+              cp312-manylinux_x86_64
+              cp313-manylinux_x86_64
+              cp314-manylinux_x86_64
 
     steps:
       - name: Checkout
@@ -43,103 +56,154 @@ jobs:
         with:
           submodules: recursive
 
-      # Setup for macOS
-      - name: Setup macOS Fortran compiler
-        if: startsWith(matrix.buildplat[0], 'macos')
-        run: |
-          # Install gfortran via homebrew
-          brew install gcc
-          # Set environment variables
-          echo "FC=gfortran-13" >> "$GITHUB_ENV"
-          echo "CC=gcc-13" >> "$GITHUB_ENV"
-          echo "CXX=g++-13" >> "$GITHUB_ENV"
-          # Set macOS deployment target
-          if [ "${{ matrix.buildplat[0] }}" = "macos-14" ]; then
-            echo "MACOSX_DEPLOYMENT_TARGET=14.0" >> "$GITHUB_ENV"
-          else
-            echo "MACOSX_DEPLOYMENT_TARGET=13.0" >> "$GITHUB_ENV"
-          fi
-
-      # Setup for Windows (msys2 + mingw-w64)
-      - name: Setup Windows Fortran (msys2)
-        if: matrix.buildplat[1] == 'win_amd64'
-        run: |
-          choco install -y msys2
-          C:\tools\msys64\usr\bin\bash -lc "pacman -Sy --noconfirm mingw-w64-x86_64-gcc-fortran"
-          echo "C:\tools\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          pip install delvewheel
-
-      - name: Validate matrix combination
-        shell: bash
-        run: |
-          echo "Python: ${{ matrix.python }}"
-          echo "Build platform: ${{ matrix.buildplat[1] }}"
-          echo "CIBW_BUILD would be: ${{ matrix.python }}-${{ matrix.buildplat[1] }}"
-
-      # Build wheels for Windows
-      - name: Build wheels (Windows)
-        if: matrix.buildplat[1] == 'win_amd64'
+      - name: Build wheels (Linux)
         uses: pypa/cibuildwheel@v3.4.0
         with:
           output-dir: wheelhouse
         env:
-          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
-          CIBW_SKIP: "*-win32 *-musllinux*"
-          CIBW_BEFORE_BUILD_WINDOWS: pip install meson ninja
-          CIBW_ENVIRONMENT_WINDOWS: FC=gfortran CC=gcc
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair -w {dest_dir} {wheel}
-          CIBW_TEST_COMMAND: python -c "import kuoeliassen; from kuoeliassen import solve_ke; print('Import test passed')"
-          CIBW_BUILD_VERBOSITY: 1
-
-      # Build wheels for macOS x86_64
-      - name: Build wheels (macOS x86_64)
-        if: matrix.buildplat[1] == 'macosx_x86_64'
-        uses: pypa/cibuildwheel@v3.4.0
-        with:
-          output-dir: wheelhouse
-        env:
-          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
-          CIBW_SKIP: "*-win32 *-musllinux*"
-          CIBW_ENVIRONMENT_MACOS: FC=gfortran-13 CC=gcc-13 CXX=g++-13 MACOSX_DEPLOYMENT_TARGET=13.0
-          MACOSX_DEPLOYMENT_TARGET: "13.0"
-          CIBW_TEST_COMMAND: python -c "import kuoeliassen; from kuoeliassen import solve_ke; print('Import test passed')"
-          CIBW_BUILD_VERBOSITY: 1
-
-      # Build wheels for macOS arm64
-      - name: Build wheels (macOS arm64)
-        if: matrix.buildplat[1] == 'macosx_arm64'
-        uses: pypa/cibuildwheel@v3.4.0
-        with:
-          output-dir: wheelhouse
-        env:
-          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
-          CIBW_SKIP: "*-win32 *-musllinux*"
-          CIBW_ENVIRONMENT_MACOS: FC=gfortran-13 CC=gcc-13 CXX=g++-13 MACOSX_DEPLOYMENT_TARGET=14.0
-          MACOSX_DEPLOYMENT_TARGET: "14.0"
-          CIBW_TEST_COMMAND: python -c "import kuoeliassen; from kuoeliassen import solve_ke; print('Import test passed')"
-          CIBW_BUILD_VERBOSITY: 1
-
-      # Build wheels for Linux x86_64
-      - name: Build wheels (Linux x86_64)
-        if: matrix.buildplat[1] == 'manylinux_x86_64'
-        uses: pypa/cibuildwheel@v3.4.0
-        with:
-          output-dir: wheelhouse
-        env:
-          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
+          CIBW_BUILD: ${{ matrix.build_selector }}
           CIBW_SKIP: "*-win32 *-musllinux* *-i686"
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
           CIBW_BEFORE_BUILD_LINUX: |
-            # Install gfortran and build tools
-            dnf install -y gcc-gfortran || yum install -y gcc-gfortran || echo 'gfortran install failed'
-          CIBW_ENVIRONMENT_LINUX: FC=gfortran CC=gcc
+            yum install -y gcc-gfortran || dnf install -y gcc-gfortran || echo 'gfortran install failed'
+            python -m pip install meson ninja
+          CIBW_ENVIRONMENT_LINUX: FC=gfortran CC=gcc PIP_PREFER_BINARY=1 PIP_ONLY_BINARY=numpy,scipy
           CIBW_TEST_COMMAND: python -c "import kuoeliassen; from kuoeliassen import solve_ke; print('Import test passed')"
           CIBW_BUILD_VERBOSITY: 1
 
       - name: Upload wheels
         uses: actions/upload-artifact@v6
         with:
-          name: wheel-${{ matrix.python }}-${{ matrix.buildplat[1] }}
+          name: ${{ matrix.artifact_name }}
+          path: ./wheelhouse/*.whl
+
+  build_macos:
+    name: Build macOS wheels (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: x86_64
+            os: macos-15-intel
+            deployment_target: "13.0"
+            artifact_name: wheel-macos-x86_64
+            build_selector: >-
+              cp39-macosx_x86_64
+              cp310-macosx_x86_64
+              cp311-macosx_x86_64
+              cp312-macosx_x86_64
+              cp313-macosx_x86_64
+              cp314-macosx_x86_64
+          - label: arm64
+            os: macos-14
+            deployment_target: "14.0"
+            artifact_name: wheel-macos-arm64
+            build_selector: >-
+              cp39-macosx_arm64
+              cp310-macosx_arm64
+              cp311-macosx_arm64
+              cp312-macosx_arm64
+              cp313-macosx_arm64
+              cp314-macosx_arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Setup macOS Fortran compiler
+        shell: bash
+        run: |
+          set -euxo pipefail
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          brew list gcc >/dev/null 2>&1 || brew install gcc
+          GCC_PREFIX="$(brew --prefix gcc)"
+          GCC_BIN_DIR="${GCC_PREFIX}/bin"
+          C_BIN="$(compgen -G "${GCC_BIN_DIR}/gcc-[0-9]*" | sort -V | tail -1)"
+          CXX_BIN="$(compgen -G "${GCC_BIN_DIR}/g++-[0-9]*" | sort -V | tail -1)"
+          F_BIN="$(compgen -G "${GCC_BIN_DIR}/gfortran-[0-9]*" | sort -V | tail -1)"
+          test -n "${C_BIN}"
+          test -n "${CXX_BIN}"
+          test -n "${F_BIN}"
+          echo "${GCC_BIN_DIR}" >> "$GITHUB_PATH"
+          echo "MACOS_CC=${C_BIN}" >> "$GITHUB_ENV"
+          echo "MACOS_CXX=${CXX_BIN}" >> "$GITHUB_ENV"
+          echo "MACOS_FC=${F_BIN}" >> "$GITHUB_ENV"
+          echo "MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}" >> "$GITHUB_ENV"
+
+      - name: Build wheels (macOS)
+        uses: pypa/cibuildwheel@v3.4.0
+        with:
+          output-dir: wheelhouse
+        env:
+          CIBW_BUILD: ${{ matrix.build_selector }}
+          CIBW_SKIP: "*-win32 *-musllinux*"
+          CIBW_BEFORE_BUILD: python -m pip install meson ninja
+          CIBW_ENVIRONMENT_MACOS: FC=${{ env.MACOS_FC }} CC=${{ env.MACOS_CC }} CXX=${{ env.MACOS_CXX }} MACOSX_DEPLOYMENT_TARGET=${{ env.MACOSX_DEPLOYMENT_TARGET }} PIP_PREFER_BINARY=1 PIP_ONLY_BINARY=numpy,scipy
+          MACOSX_DEPLOYMENT_TARGET: ${{ env.MACOSX_DEPLOYMENT_TARGET }}
+          CIBW_TEST_COMMAND: python -c "import kuoeliassen; from kuoeliassen import solve_ke; print('Import test passed')"
+          CIBW_BUILD_VERBOSITY: 1
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ./wheelhouse/*.whl
+
+  build_windows:
+    name: Build Windows wheels
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Setup Windows Fortran (msys2)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-gcc-fortran
+
+      - name: Add MinGW toolchain to PATH
+        shell: pwsh
+        run: |
+          "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "C:\msys64\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Build wheels (Windows)
+        uses: pypa/cibuildwheel@v3.4.0
+        with:
+          output-dir: wheelhouse
+        env:
+          CC: C:\msys64\mingw64\bin\gcc.exe
+          FC: C:\msys64\mingw64\bin\gfortran.exe
+          F77: C:\msys64\mingw64\bin\gfortran.exe
+          F90: C:\msys64\mingw64\bin\gfortran.exe
+          CIBW_BUILD: >-
+            cp39-win_amd64
+            cp310-win_amd64
+            cp311-win_amd64
+            cp312-win_amd64
+            cp313-win_amd64
+            cp314-win_amd64
+          CIBW_SKIP: "*-win32 *-musllinux*"
+          CIBW_BEFORE_BUILD_WINDOWS: python -m pip install meson ninja delvewheel
+          CIBW_ENVIRONMENT_WINDOWS: PIP_PREFER_BINARY=1 PIP_ONLY_BINARY=numpy,scipy
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path C:\msys64\mingw64\bin -w {dest_dir} {wheel}
+          CIBW_TEST_COMMAND: python -c "import kuoeliassen; from kuoeliassen import solve_ke; print('Import test passed')"
+          CIBW_BUILD_VERBOSITY: 1
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v6
+        with:
+          name: wheel-windows-x86_64
           path: ./wheelhouse/*.whl
 
   # Source distribution build disabled - binary wheels only (see comment below)
@@ -182,7 +246,7 @@ jobs:
   publish:
     name: Publish to PyPI (wheels only)
     if: github.event_name == 'release' && github.event.action == 'published'
-    needs: [build_wheels]
+    needs: [build_linux, build_macos, build_windows]
     runs-on: ubuntu-latest
     permissions:
       id-token: write # Use trusted publishing
@@ -218,7 +282,7 @@ jobs:
   # Verifies that binary wheels can be installed on different platforms
   test_install:
     name: Test wheel installation on ${{ matrix.os }} Python ${{ matrix.python-version }}
-    needs: [build_wheels]
+    needs: [build_linux, build_macos, build_windows]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

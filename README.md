@@ -116,7 +116,7 @@ The solver produces meridional streamfunction fields that reveal Hadley and Ferr
 - **Optimized Fortran Backend**: Core solver implemented in production-grade Fortran 90 with advanced numerical methods
 - **Component Decomposition**: Separate diagnostic contributions from latent heating, radiative heating, eddy heat flux, and eddy momentum flux
 - **Flexible Interface**: NumPy and xarray-compatible APIs for seamless integration with scientific workflows
-- **Cross-Platform Support**: Pre-built wheels for Windows, macOS (Apple Silicon), and Linux
+- **Cross-Platform Support**: Pre-built wheels for Windows, macOS (Apple Silicon and Intel), and Linux
 - **Extensively Tested**: >90% code coverage with comprehensive test suite
 - **High Performance**: Dual solver architecture with LU decomposition (exact) and SOR (memory-efficient iterative)
 - **Numerical Robustness**: Robust handling of geometric singularities near poles (requires grid excluding exact $\pm 90^\circ$)
@@ -126,7 +126,7 @@ The solver produces meridional streamfunction fields that reveal Hadley and Ferr
 
 ### From PyPI (Recommended)
 
-Pre-built binary wheels are available for Python 3.9-3.13 on all major platforms:
+Pre-built binary wheels are available for Python 3.9-3.14 on all major platforms:
 
 ```bash
 pip install kuoeliassen
@@ -135,6 +135,7 @@ pip install kuoeliassen
 No compiler required! Wheels are provided for:
 - **Linux**: x86_64 (manylinux_2_28)
 - **macOS**: arm64 (Apple Silicon M1/M2/M3)
+- **macOS**: x86_64 (Intel)
 - **Windows**: x86_64
 
 ### From Source (Development)
@@ -297,19 +298,17 @@ psi.plot()  # Easy visualization
 
 | Platform | Python Versions | Architecture | Status |
 |----------|----------------|--------------|--------|
-| Linux    | 3.9 - 3.13     | x86_64       | ✅ Tested |
-| macOS    | 3.9 - 3.13     | arm64 (M1/M2/M3)| ✅ Tested |
-| Windows  | 3.9 - 3.13     | x86_64       | ✅ Tested |
+| Linux    | 3.9 - 3.14     | x86_64       | ✅ Tested |
+| macOS    | 3.9 - 3.14     | arm64 (M1/M2/M3) | ✅ Tested |
+| macOS    | 3.9 - 3.14     | x86_64 (Intel)   | ✅ Tested |
+| Windows  | 3.9 - 3.14     | x86_64       | ✅ Tested |
 
 > [!NOTE]
-> **macOS Intel (x86_64) Support**: Binary wheels for macOS x86_64 (Intel processors) are no longer provided as of v0.2.0. 
-> If you have an Intel-based Mac, you can install from source:
+> **macOS Intel (x86_64) Support**: Binary wheels for macOS x86_64 (Intel processors) are now provided as of v0.2.4.
+> If you have an Intel-based Mac, you can install directly from PyPI:
 > ```bash
-> git clone https://github.com/QianyeSu/KuoEliassen.git
-> cd KuoEliassen
-> pip install -e .
+> pip install kuoeliassen
 > ```
-> Requires: `brew install gcc`
 
 ## Requirements
 

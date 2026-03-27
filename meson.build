@@ -1,7 +1,8 @@
 project(
   'KuoEliassen',
-  'c', 'fortran',
-  version: '0.2.3',  # Update this when releasing new versions
+  'c',
+  'fortran',
+  version: '0.2.4', # Update this when releasing new versions
   license: 'BSD-3-Clause',
   meson_version: '>=1.1.0',
   default_options: [
@@ -20,7 +21,8 @@ py_dep = py.dependency()
 # Get NumPy include directories (robustly handle different NumPy versions)
 incdir_numpy_cmd = run_command(
   py,
-  ['-c', '''
+  [
+    '-c', '''
 import numpy
 import os
 paths = [
@@ -34,7 +36,8 @@ for path in paths:
         break
 else:
     print(numpy.get_include())
-'''],
+''',
+  ],
   check: true,
 )
 incdir_numpy = incdir_numpy_cmd.stdout().strip()
@@ -42,7 +45,8 @@ incdir_numpy = incdir_numpy_cmd.stdout().strip()
 # Try to get f2py include
 incdir_f2py_cmd = run_command(
   py,
-  ['-c', '''
+  [
+    '-c', '''
 import numpy
 import os
 try:
@@ -54,7 +58,8 @@ try:
         print(numpy.get_include())
 except:
     print(numpy.get_include())
-'''],
+''',
+  ],
   check: true,
 )
 incdir_f2py = incdir_f2py_cmd.stdout().strip()

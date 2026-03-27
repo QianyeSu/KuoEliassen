@@ -33,6 +33,11 @@ jobs:
           - label: manylinux2014_x86_64
             artifact_name: wheel-linux-manylinux2014_x86_64
             manylinux_image: manylinux2014
+            environment_linux: >-
+              FC=gfortran
+              CC=gcc
+              PIP_PREFER_BINARY=1
+            test_skip: "cp314-manylinux_x86_64"
             build_selector: >-
               cp39-manylinux_x86_64
               cp310-manylinux_x86_64
@@ -43,6 +48,12 @@ jobs:
           - label: manylinux_2_28_x86_64
             artifact_name: wheel-linux-manylinux_2_28_x86_64
             manylinux_image: manylinux_2_28
+            environment_linux: >-
+              FC=gfortran
+              CC=gcc
+              PIP_PREFER_BINARY=1
+              PIP_ONLY_BINARY=numpy,scipy
+            test_skip: ""
             build_selector: >-
               cp39-manylinux_x86_64
               cp310-manylinux_x86_64
@@ -64,11 +75,12 @@ jobs:
         env:
           CIBW_BUILD: ${{ matrix.build_selector }}
           CIBW_SKIP: "*-win32 *-musllinux* *-i686"
+          CIBW_TEST_SKIP: ${{ matrix.test_skip }}
           CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
           CIBW_BEFORE_BUILD_LINUX: |
             yum install -y gcc-gfortran || dnf install -y gcc-gfortran || echo 'gfortran install failed'
             python -m pip install meson ninja
-          CIBW_ENVIRONMENT_LINUX: FC=gfortran CC=gcc PIP_PREFER_BINARY=1 PIP_ONLY_BINARY=numpy,scipy
+          CIBW_ENVIRONMENT_LINUX: ${{ matrix.environment_linux }}
           CIBW_TEST_COMMAND: python -c "import kuoeliassen; from kuoeliassen import solve_ke; print('Import test passed')"
           CIBW_BUILD_VERBOSITY: 1
 

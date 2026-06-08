@@ -8,6 +8,20 @@ import numpy as np
 import xarray as xr
 from kuoeliassen import solve_ke, solve_ke_LHS
 from kuoeliassen.xarray_interface import solve_ke_xarray, solve_ke_LHS_xarray
+import kuoeliassen.kuoeliassen_module as km
+
+
+class TestDirectWrapperCompatibility:
+    """Regression tests for the direct C/Fortran wrapper."""
+
+    def test_strided_1d_inputs_are_copied_before_fortran_call(self):
+        """Strided 1D arrays must not be passed to Fortran as raw contiguous buffers."""
+        field = np.arange(10.0, dtype=np.float64)[::2]
+        pressure = np.linspace(10000.0, 90000.0, 10, dtype=np.float64)[::2]
+
+        result = km.vertical_gradient(field, pressure)
+
+        np.testing.assert_allclose(result, np.full(field.shape, 2.0 / (pressure[1] - pressure[0])))
 
 
 class TestSORSolver:

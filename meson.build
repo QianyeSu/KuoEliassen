@@ -42,32 +42,9 @@ else:
 )
 incdir_numpy = incdir_numpy_cmd.stdout().strip()
 
-# Try to get f2py include
-incdir_f2py_cmd = run_command(
-  py,
-  [
-    '-c', '''
-import numpy
-import os
-try:
-    import numpy.f2py
-    f2py_path = numpy.f2py.get_include()
-    if os.path.exists(f2py_path):
-        print(f2py_path)
-    else:
-        print(numpy.get_include())
-except:
-    print(numpy.get_include())
-''',
-  ],
-  check: true,
-)
-incdir_f2py = incdir_f2py_cmd.stdout().strip()
-
 message('NumPy include directory: ' + incdir_numpy)
-message('F2PY include directory: ' + incdir_f2py)
 
-inc_np = include_directories(incdir_numpy, incdir_f2py)
+inc_np = include_directories(incdir_numpy)
 
 # NumPy API settings
 numpy_nodepr_api = ['-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION']

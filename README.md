@@ -320,9 +320,9 @@ psi.plot()  # Easy visualization
 ### Development Requirements
 
 For building from source, you'll need:
-- A Fortran compiler: `gfortran`, `ifort`, or `flang`
+- A GCC-compatible C/Fortran toolchain, tested with `gcc` and `gfortran`
 - Meson build system
-- NumPy's f2py (included with NumPy)
+- NumPy headers for the direct C extension wrapper
 
 ## License
 

@@ -273,7 +273,7 @@ jobs:
       id-token: write # Use trusted publishing
     steps:
       - name: Download all wheel artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: wheel-*
           path: dist-artifacts
@@ -317,7 +317,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Download wheels
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: wheel-*
           path: wheels
